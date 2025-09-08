@@ -1,0 +1,5 @@
+# This file is used to list dependencies for the project
+# Run 'pip install -r requirements.txt' to install them
+pytest
+numpy
+pandas
