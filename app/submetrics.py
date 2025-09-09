@@ -6,9 +6,16 @@ class SizeMetric(Metric):
         super().__init__()
         self.name: str = "size"
 
-    def calculate_metric(self, url) -> float:
+    def calculate_metric(self, url: str, type: str) -> float:
         # Implement size calculation logic here
-        pass
+        if type == "model":
+            pass
+        elif type == "dataset":
+            pass
+        elif type == "code":
+            pass
+        else:
+            raise ValueError("Unsupported type passed")
 
     def calculate_latency(self):
         pass
@@ -19,9 +26,18 @@ class LicenseMetric(Metric):
         super().__init__()
         self.name: str = "license"
         
-    def calculate_metric(self, url) -> float:
+    def calculate_metric(self, url: str, type: str) -> float:
         # Implement license calculation logic here
-                
+
+        if type == "model":
+            pass
+        elif type == "dataset":
+            pass
+        elif type == "code":
+            pass
+        else:
+            raise ValueError("Unsupported type passed")
+        
         # check if license is present
         if self.find_license(url):
             return 1.0
@@ -31,7 +47,7 @@ class LicenseMetric(Metric):
     def calculate_latency(self):
         pass
 
-    def find_license(self, url) -> bool:
+    def find_license(self, url: str, type: str) -> bool:
         # Implement logic to check license here
         return True
 
@@ -40,8 +56,18 @@ class RampUpMetric(Metric):
         super().__init__()
         self.name: str = "ramp_up"
         
-    def calculate_metric(self, url) -> float:
+    def calculate_metric(self, url: str, type: str) -> float:
         # Implement ramp-up calculation logic here
+
+        if type == "model":
+            pass
+        elif type == "dataset":
+            pass
+        elif type == "code":
+            pass
+        else:
+            raise ValueError("Unsupported type passed")
+        
         pass
 
     def calculate_latency(self):
@@ -52,8 +78,18 @@ class BusFactorMetric(Metric):
         super().__init__()
         self.name: str = "bus_factor"
         
-    def calculate_metric(self, url) -> float:
+    def calculate_metric(self, url: str, type: str) -> float:
         # Implement bus factor calculation logic here
+
+        if type == "model":
+            pass
+        elif type == "dataset":
+            pass
+        elif type == "code":
+            pass
+        else:
+            raise ValueError("Unsupported type passed")
+        
         pass
 
     def calculate_latency(self):
@@ -64,9 +100,18 @@ class AvailableScoreMetric(Metric):
         super().__init__()
         self.name: str = "available_score"
         
-    def calculate_metric(self, url) -> float:
+    def calculate_metric(self, url: str, type: str) -> float:
         # Implement available score calculation logic here
 
+        if type == "model":
+            pass
+        elif type == "dataset":
+            pass
+        elif type == "code":
+            pass
+        else:
+            raise ValueError("Unsupported type passed")
+        
         accessible: bool = True # replace with actual logic to check if repo is accessible
         if accessible:
             return 1.0
@@ -85,8 +130,18 @@ class DatasetQualityMetric(Metric):
         super().__init__()
         self.name: str = "dataset_quality"
         
-    def calculate_metric(self, url) -> float:
+    def calculate_metric(self, url: str, type: str) -> float:
         # Implement dataset quality calculation logic here
+
+        if type == "model":
+            pass
+        elif type == "dataset":
+            pass
+        elif type == "code":
+            pass
+        else:
+            raise ValueError("Unsupported type passed")
+        
         pass
 
     def calculate_latency(self):
@@ -98,8 +153,18 @@ class CodeQualityMetric(Metric):
         super().__init__()
         self.name: str = "code_quality"
         
-    def calculate_metric(self, url) -> float:
+    def calculate_metric(self, url: str, type: str) -> float:
         # Implement code quality calculation logic here
+
+        if type == "model":
+            pass
+        elif type == "dataset":
+            pass
+        elif type == "code":
+            pass
+        else:
+            raise ValueError("Unsupported type passed")
+
         pass
 
     def calculate_latency(self):
@@ -111,8 +176,18 @@ class PerformanceMetric(Metric):
         super().__init__()
         self.name: str = "performance"
         
-    def calculate_metric(self, url) -> float:
+    def calculate_metric(self, url: str, type: str) -> float:
         # Implement performance calculation logic here
+
+        if type == "model":
+            pass
+        elif type == "dataset":
+            pass
+        elif type == "code":
+            pass
+        else:
+            raise ValueError("Unsupported type passed")
+        
         pass
 
     def calculate_latency(self):
