@@ -1,4 +1,5 @@
-from .metric import Metric
+from typing import *
+from metric import Metric
 
 class SizeMetric(Metric):
     """Measures the size of the project in terms of lines of code, number of files, etc.""" # add more details later
@@ -30,19 +31,20 @@ class LicenseMetric(Metric):
         # Implement license calculation logic here
 
         if type == "model":
-            pass
+            return 0.0 # models do not have a license ? 
         elif type == "dataset":
-            pass
+            return 0.0 # datasets do not have a license ? 
         elif type == "code":
-            pass
+            # check if license is present
+            if self.find_license(url):
+                return 1.0
+            else:
+                return 0.0
         else:
             raise ValueError("Unsupported type passed")
         
-        # check if license is present
-        if self.find_license(url):
-            return 1.0
-        else:
-            return 0.0
+        
+        
         
     def calculate_latency(self):
         pass
@@ -52,6 +54,7 @@ class LicenseMetric(Metric):
         return True
 
 class RampUpMetric(Metric):
+    """Calculate the ramp-up time of the project"""
     def __init__(self):
         super().__init__()
         self.name: str = "ramp_up"
@@ -74,6 +77,7 @@ class RampUpMetric(Metric):
         pass
 
 class BusFactorMetric(Metric):
+    """Calculate the bus factor of the project"""
     def __init__(self):
         super().__init__()
         self.name: str = "bus_factor"
@@ -96,6 +100,7 @@ class BusFactorMetric(Metric):
         pass
 
 class AvailableScoreMetric(Metric):
+    """Check if the repository is accessible"""
     def __init__(self):
         super().__init__()
         self.name: str = "available_score"
