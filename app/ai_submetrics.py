@@ -1,8 +1,6 @@
 import time
 import json
 import re
-import os
-import requests
 from typing import * #Dict, Any, Optional
 # from abc import ABC, abstractmethod
 from metric import Metric

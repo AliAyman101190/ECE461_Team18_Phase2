@@ -8,7 +8,7 @@ class Metric(ABC):
         self.weight: float = 0.125
 
     @abstractmethod
-    def calculate_metric(self):
+    def calculate_metric(self, data: str, category: str):
         return NotImplementedError("Each metric should implement this method")
 
     @abstractmethod

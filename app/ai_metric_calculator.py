@@ -5,10 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 
 from metric import Metric
-from submetrics import (
-    SizeMetric, LicenseMetric, RampUpMetric, BusFactorMetric,
-    AvailableScoreMetric, DatasetQualityMetric, CodeQualityMetric, PerformanceMetric
-)
+from ai_submetrics import *
 
 
 class MetricCalculator:
