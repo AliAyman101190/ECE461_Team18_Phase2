@@ -5,4 +5,5 @@ numpy
 pandas
 python-dotenv
 huggingface_hub
-git-python # for interacting with Git repositories (cloning and assessing)
+# git-python # may be useful for interacting with Git repositories (cloning and assessing)
+mypy
