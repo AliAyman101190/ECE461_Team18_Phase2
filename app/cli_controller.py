@@ -84,41 +84,49 @@ class CLIController:
 
         try:
             # required packages
-            packages = [
-                'requests',
-                'pytest',
-                'pytest-cov',
-                'flake8',
-                'mypy',
-                'isort',
-                'huggingface-hub',
-                'transformers',
-                'torch',
-                'GitPython'
-            ]
-            
-            for package in packages:
-                if self.logger:
-                    self.logger.info(f"Installing {package}")
+            # packages = [
+            #     'requests',
+            #     'pytest',
+            #     'pytest-cov',
+            #     'flake8',
+            #     'mypy',
+            #     'isort',
+            #     'huggingface-hub',
+            #     'transformers',
+            #     'torch',
+            #     'GitPython'
+            # ]
 
-                result = subprocess.run(
-                    ['pip', 'install', '--user', package],
+            result = subprocess.run(
+                    ['pip', 'install', '-r', 'requirements.txt', '--user'],
                     capture_output=True,
                     text=True,
                     timeout=300 # 5 min timeout
                 )
+            
+            # for package in packages:
+            #     if self.logger:
+            #         self.logger.info(f"Installing {package}")
 
-                if result.returncode != 0:
-                    print(f"Error installing {package}: {result.stderr}", file=sys.stderr)
+            #     result = subprocess.run(
+            #         ['pip', 'install', '--user', package],
+            #         capture_output=True,
+            #         text=True,
+            #         timeout=300 # 5 min timeout
+            #     )
+
+            #     if result.returncode != 0:
+            #         print(f"Error installing {package}: {result.stderr}", file=sys.stderr)
+            #         return 1
+
+            if result.returncode != 0:
+                    self.logger.error(f"Error installing required packages.: {result.stderr}", file=sys.stderr)
                     return 1
                 
             if self.logger:
                 self.logger.info("Installed all dependencies successfully.")
             return 0
         
-        except subprocess.TimeoutError:
-            print("Error: timeout exceeded", file=sys.stderr)
-            return 1
         except Exception as e:
             print(f"Error during installation: {str(e)}", file=sys.stderr)
             return 1
