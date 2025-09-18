@@ -16,9 +16,12 @@ from pathlib import Path # filepath handling
 from typing import List, Dict, Any, Optional # type annotations
 
 # imports from modules
-from url_handler import URLHandler
+from url_handler.url_handler import URLHandler
 from metric_calculator import MetricCalculator
-from logger import setup_logger
+# from logger import setup_logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, filename='metric_calculator.log', filemode='w', 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 class CLIController:
     """
@@ -29,30 +32,29 @@ class CLIController:
         """ 
         Initialize CLI controller w/ logging and basic setup.
         """
-        self.logger: Optional[logging.Logger] = None
         self.url_handler: URLHandler = URLHandler()
         self.metric_calculator: MetricCalculator = MetricCalculator()
 
-    def setup_logging(self) -> None:
-        """
-        Setup logging based on env var LOG_FILE and LOG_LEVEL.
-        LOG_LEVEL: 0=silent, 1=info, 2=debug (default to 0).
-        """
+    # def setup_logging(self) -> None:
+    #     """
+    #     Setup logging based on env var LOG_FILE and LOG_LEVEL.
+    #     LOG_LEVEL: 0=silent, 1=info, 2=debug (default to 0).
+    #     """
 
-        log_file = os.environ.get('LOG_FILE', 'application.log')
-        log_level = int(os.environ.get('LOG_LEVEL', '0'))
+    #     log_file = os.environ.get('LOG_FILE', 'application.log')
+    #     log_level = int(os.environ.get('LOG_LEVEL', '0'))
 
-        # silent mode (no logging)
-        if log_level == 0:
-            logging.disable(logging.CRITICAL)
-            return
+    #     # silent mode (no logging)
+    #     if log_level == 0:
+    #         logging.disable(logging.CRITICAL)
+    #         return
         
-        level_map = {1: logging.INFO, 2: logging.DEBUG}
-        retrieved_log_level = level_map.get(log_level, logging.INFO)
+    #     level_map = {1: logging.INFO, 2: logging.DEBUG}
+    #     retrieved_log_level = level_map.get(log_level, logging.INFO)
 
-        self.logger = setup_logger(log_file, retrieved_log_level)
-        if self.logger:
-            self.logger.info("CLI Controller intialized.")
+    #     # logger = setup_logger(log_file, retrieved_log_level)
+    #     # if logger:
+    #     #     logger.info("CLI Controller intialized.")
 
     def parse_arguments(self) -> argparse.Namespace:
         """
@@ -79,8 +81,8 @@ class CLIController:
         Returns: 0 for success, 1 for failure
         """
 
-        if self.logger:
-            self.logger.info("Installing dependencies.")
+        if logger:
+            logger.info("Installing dependencies.")
 
         try:
             # required packages
@@ -105,8 +107,8 @@ class CLIController:
                 )
             
             # for package in packages:
-            #     if self.logger:
-            #         self.logger.info(f"Installing {package}")
+            #     if logger:
+            #         logger.info(f"Installing {package}")
 
             #     result = subprocess.run(
             #         ['pip', 'install', '--user', package],
@@ -120,11 +122,11 @@ class CLIController:
             #         return 1
 
             if result.returncode != 0:
-                    self.logger.error(f"Error installing required packages.: {result.stderr}", file=sys.stderr)
+                    logger.error(f"Error installing required packages.: {result.stderr}")
                     return 1
                 
-            if self.logger:
-                self.logger.info("Installed all dependencies successfully.")
+            if logger:
+                logger.info("Installed all dependencies successfully.")
             return 0
         
         except Exception as e:
@@ -146,8 +148,8 @@ class CLIController:
             with open(path, 'r', encoding='ascii') as f:
                 urls = [line.strip() for line in f if line.strip()]
 
-            if self.logger:
-                self.logger.info(f"Read {len(urls)} URLs from {url_file_path}")
+            if logger:
+                logger.info(f"Read {len(urls)} URLs from {url_file_path}")
 
             return urls
         
@@ -171,6 +173,7 @@ class CLIController:
 
         Returns: Overall net score
         """
+        return 0.0 # fix this later
 
     def process_urls(self, url_file_path: str) -> int:
         """
@@ -186,14 +189,14 @@ class CLIController:
             model_urls = []
             for url in urls:
                 try:
-                    url_data = self.url_handler.parse_url(url) # need to see Alex's function
-                    if url_data and url_data.get('type') == 'MODEL': # need to see George's code
+                    url_data = self.url_handler.parse_url(url) # need to see George's function
+                    if url_data and url_data.get('type') == 'MODEL': # need to see Alex's code
                         model_urls.append(url)
                 except Exception:
                     continue
 
-            if self.logger:
-                self.logger.info(f"Processing {len(model_urls)} model URLs out of {len(urls)} total URLs")
+            if logger:
+                logger.info(f"Processing {len(model_urls)} model URLs out of {len(urls)} total URLs")
 
             for url in model_urls:
                 result = self.process_single_model(url)
@@ -215,8 +218,8 @@ class CLIController:
         Returns: 0 for success, 1 for failure
         """
 
-        if self.logger:
-            self.logger.info("Executing tests.")
+        if logger:
+            logger.info("Executing tests.")
 
         try:
 
@@ -270,8 +273,8 @@ class CLIController:
             # output test results
             print(f"{passed}/{total_tests} test cases passed. {coverage}% line coverage achieved.")
 
-            if self.logger:
-                self.logger.info(f"Test execution completed: {passed}/{total_tests} passed, {coverage}% coverage")
+            if logger:
+                logger.info(f"Test execution completed: {passed}/{total_tests} passed, {coverage}% coverage")
 
             return result.returncode
         
@@ -291,13 +294,13 @@ class CLIController:
         """
 
         try:
-            self.setup_logging()
+            # self.setup_logging()
 
             args = self.parse_arguments()
             command = args.command
 
-            if self.logger:
-                self.logger.info(f"Executing command: {command}")
+            if logger:
+                logger.info(f"Executing command: {command}")
 
             if command == 'install':
                 return self.install_dependencies()
@@ -311,8 +314,8 @@ class CLIController:
             return 1
         except Exception as e:
             print(f"Error: {str(e)}", file=sys.stderr)
-            if self.logger:
-                self.logger.error("Error: {str(e)}", file=sys.stderr)
+            if logger:
+                logger.error("Error: {str(e)}")
             return 1
 
 
