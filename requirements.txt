@@ -3,3 +3,4 @@
 pytest
 numpy
 pandas
+requests>=2.25.0
