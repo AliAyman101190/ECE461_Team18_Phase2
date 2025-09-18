@@ -1,10 +1,17 @@
-.venv/
+# Keep keys private
 .env
 
+# Virtual environment is local only
+.venv/
+
+# Don't need any caches
 .vscode/
 __pycache__/
-
 .mypy_cache/
 .pytest_cache/
 
+# Idek what this is
 .dist/
+
+# Logging will clutter repo
+*.log
