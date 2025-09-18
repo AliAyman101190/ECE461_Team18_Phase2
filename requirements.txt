@@ -7,3 +7,4 @@ python-dotenv
 huggingface_hub
 # git-python # may be useful for interacting with Git repositories (cloning and assessing)
 mypy
+pytest

@@ -19,7 +19,6 @@ jobs:
 
     - name: Run MyPy
       run: mypy app/
-
-#     - name: Run tests
-#       run: |
-#         python -m pytest tests/
+    - name: Run tests
+      run: |
+        python -m pytest -q tests/

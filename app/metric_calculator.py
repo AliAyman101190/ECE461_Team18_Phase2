@@ -36,7 +36,7 @@ class MetricCalculator:
     def _configure_weights(self) -> None:
         """Configure metric weights based on Sarah's stated priorities."""
         # Sarah's concerns prioritized: ramp-up time, quality, documentation, maintainability
-        weight_config = {
+        weight_config: Dict[str, float] = {
             "ramp_up_time": 0.20,      # High priority - ease of use
             "license": 0.15,           # High priority - legal compliance  
             "dataset_and_code_score": 0.15,  # High priority - documentation
