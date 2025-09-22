@@ -1,12 +1,3 @@
-#!/usr/bin/env python3
-"""
-Data Retrieval Module
-
-This module handles API calls to fetch data from GitHub, NPM, and Hugging Face
-after URLs have been processed by the URL handler. It provides a clean interface
-for retrieving repository/package metadata for metric calculations.
-"""
-
 import requests
 import time
 from typing import Dict, Any, Optional, List
@@ -19,7 +10,6 @@ from url_handler import URLData, URLCategory
 
 @dataclass
 class RepositoryData:
-    """Data structure for repository/package information."""
     platform: str
     identifier: str
     name: str
@@ -44,10 +34,7 @@ class RepositoryData:
 
 
 class GitHubAPIClient:
-    """Client for GitHub API interactions."""
-    
     def __init__(self, token: Optional[str] = None):
-        """Initialize GitHub API client with optional token for higher rate limits."""
         self.base_url = "https://api.github.com"
         self.session = requests.Session()
         
@@ -60,7 +47,6 @@ class GitHubAPIClient:
         })
     
     def get_repository_data(self, owner: str, repo: str) -> RepositoryData:
-        """Fetch repository data from GitHub API."""
         try:
             # Get basic repository information
             repo_url = f"{self.base_url}/repos/{owner}/{repo}"
@@ -134,7 +120,6 @@ class GitHubAPIClient:
             )
     
     def _get_contributors_count(self, owner: str, repo: str) -> Optional[int]:
-        """Get contributors count for a repository."""
         try:
             contributors_url = f"{self.base_url}/repos/{owner}/{repo}/contributors"
             response = self.session.get(contributors_url, params={"per_page": 1})
@@ -159,8 +144,6 @@ class GitHubAPIClient:
 
 
 class NPMAPIClient:
-    """Client for NPM API interactions."""
-    
     def __init__(self):
         """Initialize NPM API client."""
         self.base_url = "https://registry.npmjs.org"
@@ -171,7 +154,6 @@ class NPMAPIClient:
         })
     
     def get_package_data(self, package_name: str) -> RepositoryData:
-        """Fetch package data from NPM API."""
         try:
             # Get package information
             package_url = f"{self.base_url}/{package_name}"
@@ -250,7 +232,6 @@ class NPMAPIClient:
             )
     
     def _get_download_count(self, package_name: str) -> Optional[int]:
-        """Get download count for the last month."""
         try:
             downloads_url = f"{self.downloads_url}/point/last-month/{package_name}"
             response = self.session.get(downloads_url)
@@ -265,10 +246,7 @@ class NPMAPIClient:
 
 
 class HuggingFaceAPIClient:
-    """Client for Hugging Face API interactions."""
-    
     def __init__(self):
-        """Initialize Hugging Face API client."""
         self.base_url = "https://huggingface.co/api"
         self.session = requests.Session()
         self.session.headers.update({
@@ -276,7 +254,6 @@ class HuggingFaceAPIClient:
         })
     
     def get_model_data(self, identifier: str) -> RepositoryData:
-        """Fetch model/dataset/space data from Hugging Face API."""
         try:
             # Try to get model information first
             model_url = f"{self.base_url}/models/{identifier}"
@@ -340,17 +317,13 @@ class HuggingFaceAPIClient:
 
 
 class DataRetriever:
-    """Main class for coordinating data retrieval across platforms."""
-    
     def __init__(self, github_token: Optional[str] = None, rate_limit_delay: float = 0.1):
-        """Initialize data retriever with API clients."""
         self.github_client = GitHubAPIClient(github_token)
         self.npm_client = NPMAPIClient()
         self.huggingface_client = HuggingFaceAPIClient()
         self.rate_limit_delay = rate_limit_delay
     
     def retrieve_data(self, url_data: URLData) -> RepositoryData:
-        """Retrieve data for a processed URL."""
         if not url_data.is_valid or not url_data.unique_identifier:
             return RepositoryData(
                 platform=url_data.category.value,
@@ -379,7 +352,6 @@ class DataRetriever:
             )
     
     def retrieve_batch_data(self, url_data_list: List[URLData]) -> List[RepositoryData]:
-        """Retrieve data for multiple URLs with rate limiting."""
         results = []
         
         for i, url_data in enumerate(url_data_list):
@@ -392,13 +364,11 @@ class DataRetriever:
 
 # Convenience functions
 def retrieve_data_for_urls(url_data_list: List[URLData], github_token: Optional[str] = None) -> List[RepositoryData]:
-    """Convenience function to retrieve data for a list of URL data objects."""
     retriever = DataRetriever(github_token=github_token)
     return retriever.retrieve_batch_data(url_data_list)
 
 
 def retrieve_data_for_url(url_data: URLData, github_token: Optional[str] = None) -> RepositoryData:
-    """Convenience function to retrieve data for a single URL data object."""
     retriever = DataRetriever(github_token=github_token)
     return retriever.retrieve_data(url_data)
 

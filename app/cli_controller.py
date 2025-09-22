@@ -16,7 +16,7 @@ from pathlib import Path # filepath handling
 from typing import List, Dict, Any, Optional # type annotations
 
 # imports from modules
-from url_handler.url_handler import URLHandler
+from url_handler import URLHandler
 from metric_calculator import MetricCalculator
 # from logger import setup_logger
 logger = logging.getLogger(__name__)

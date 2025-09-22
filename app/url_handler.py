@@ -1,12 +1,8 @@
-"""
-URL Handler Module
-
-This module provides functionality to handle URL parsing, validation, and classification.
-It takes in URL strings, validates them, classifies them by hostname into categories,
-extracts unique identifiers, and returns structured data objects.
-"""
 
 import re
+import sys
+import importlib
+import types
 from urllib.parse import urlparse, parse_qs
 from typing import Dict, Any, Optional, Union, List
 from dataclasses import dataclass
@@ -14,7 +10,6 @@ from enum import Enum
 
 
 class URLCategory(Enum):
-    """Enumeration of supported URL categories."""
     GITHUB = "github"
     NPM = "npm"
     HUGGINGFACE = "huggingface"
@@ -23,7 +18,6 @@ class URLCategory(Enum):
 
 @dataclass
 class URLData:
-    """Structured data object for URL information."""
     original_url: str
     category: URLCategory
     hostname: str
@@ -37,10 +31,7 @@ class URLData:
 
 
 class URLHandler:
-    """Main URL handler class for processing URLs."""
-    
     def __init__(self):
-        """Initialize the URL handler with hostname mappings."""
         self.hostname_categories = {
             'github.com': URLCategory.GITHUB,
             'www.github.com': URLCategory.GITHUB,
@@ -51,15 +42,6 @@ class URLHandler:
         }
     
     def validate_url(self, url_string: str) -> bool:
-        """
-        Validate if the URL string is a properly formatted URL.
-        
-        Args:
-            url_string (str): The URL string to validate
-            
-        Returns:
-            bool: True if valid, False otherwise
-        """
         try:
             # Basic URL format validation
             if not url_string or not isinstance(url_string, str):
@@ -87,15 +69,6 @@ class URLHandler:
             return False
     
     def classify_hostname(self, hostname: str) -> URLCategory:
-        """
-        Classify the hostname into one of the supported categories.
-        
-        Args:
-            hostname (str): The hostname to classify
-            
-        Returns:
-            URLCategory: The category the hostname belongs to
-        """
         hostname_lower = hostname.lower()
         
         # Remove www. prefix for classification
@@ -118,7 +91,6 @@ class URLHandler:
         return URLCategory.UNKNOWN
     
     def extract_github_identifier(self, parsed_url) -> Dict[str, Optional[str]]:
-        """Extract unique identifier from GitHub URLs."""
         path_parts = [part for part in parsed_url.path.split('/') if part]
         
         if len(path_parts) >= 2:
@@ -134,7 +106,6 @@ class URLHandler:
         return {'unique_identifier': None, 'owner': None, 'repository': None}
     
     def extract_npm_identifier(self, parsed_url) -> Dict[str, Optional[str]]:
-        """Extract unique identifier from NPM URLs."""
         path_parts = [part for part in parsed_url.path.split('/') if part]
         
         # Handle different NPM URL patterns
@@ -152,7 +123,6 @@ class URLHandler:
         return {'unique_identifier': None, 'package_name': None}
     
     def extract_huggingface_identifier(self, parsed_url) -> Dict[str, Optional[str]]:
-        """Extract unique identifier from Hugging Face URLs."""
         path_parts = [part for part in parsed_url.path.split('/') if part]
         
         # Handle different Hugging Face URL patterns
@@ -194,16 +164,6 @@ class URLHandler:
         return {'unique_identifier': None, 'owner': None, 'repository': None, 'package_name': None}
     
     def extract_unique_identifier(self, parsed_url, category: URLCategory) -> Dict[str, Optional[str]]:
-        """
-        Extract unique identifier based on the URL category.
-        
-        Args:
-            parsed_url: Parsed URL object
-            category (URLCategory): The category of the URL
-            
-        Returns:
-            Dict[str, Optional[str]]: Dictionary containing extracted identifiers
-        """
         if category == URLCategory.GITHUB:
             return self.extract_github_identifier(parsed_url)
         elif category == URLCategory.NPM:
@@ -214,15 +174,6 @@ class URLHandler:
             return {'unique_identifier': None}
     
     def handle_url(self, url_string: str) -> URLData:
-        """
-        Main function to handle URL processing.
-        
-        Args:
-            url_string (str): The URL string to process
-            
-        Returns:
-            URLData: Structured data object containing URL information
-        """
         # Initialize default response
         url_data = URLData(
             original_url=url_string,
@@ -266,19 +217,6 @@ class URLHandler:
 
 # File processing functions
 def read_urls_from_file(file_path: str) -> List[str]:
-    """
-    Read URLs from a file, one URL per line.
-    
-    Args:
-        file_path (str): Path to the file containing URLs
-        
-    Returns:
-        List[str]: List of URL strings
-        
-    Raises:
-        FileNotFoundError: If the file doesn't exist
-        IOError: If there's an error reading the file
-    """
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             urls = []
@@ -294,19 +232,6 @@ def read_urls_from_file(file_path: str) -> List[str]:
 
 
 def process_url_file(file_path: str) -> List[URLData]:
-    """
-    Process all URLs from a file and return results.
-    
-    Args:
-        file_path (str): Path to the file containing URLs
-        
-    Returns:
-        List[URLData]: List of processed URL data objects
-        
-    Raises:
-        FileNotFoundError: If the file doesn't exist
-        IOError: If there's an error reading the file
-    """
     urls = read_urls_from_file(file_path)
     handler = URLHandler()
     
@@ -319,42 +244,14 @@ def process_url_file(file_path: str) -> List[URLData]:
 
 
 def get_valid_urls(results: List[URLData]) -> List[URLData]:
-    """
-    Filter and return only valid URLs from processing results.
-    
-    Args:
-        results (List[URLData]): List of URL processing results
-        
-    Returns:
-        List[URLData]: List containing only valid URL data
-    """
     return [result for result in results if result.is_valid]
 
 
 def get_urls_by_category(results: List[URLData], category: URLCategory) -> List[URLData]:
-    """
-    Filter URLs by category from processing results.
-    
-    Args:
-        results (List[URLData]): List of URL processing results
-        category (URLCategory): Category to filter by
-        
-    Returns:
-        List[URLData]: List of URLs matching the specified category
-    """
     return [result for result in results if result.category == category and result.is_valid]
 
 
 def get_processing_summary(results: List[URLData]) -> Dict[str, Any]:
-    """
-    Generate a summary of URL processing results for other modules.
-    
-    Args:
-        results (List[URLData]): List of URL processing results
-        
-    Returns:
-        Dict[str, Any]: Summary statistics and categorized results
-    """
     total_urls = len(results)
     valid_urls = get_valid_urls(results)
     invalid_urls = [result for result in results if not result.is_valid]
@@ -386,22 +283,12 @@ def get_processing_summary(results: List[URLData]) -> Dict[str, Any]:
 
 # Convenience function for easy access
 def handle_url(url_string: str) -> URLData:
-    """
-    Convenience function to handle a single URL.
-    
-    Args:
-        url_string (str): The URL string to process
-        
-    Returns:
-        URLData: Structured data object containing URL information
-    """
     handler = URLHandler()
     return handler.handle_url(url_string)
 
 
 # Command-line interface and main execution
 def main():
-    """Main function for command-line execution."""
     import sys
     
     if len(sys.argv) < 2:
@@ -482,3 +369,41 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# --- Compatibility shim for tests expecting package-style imports ---
+# Allows: from url_handler import ... (already works when this module
+# is imported as url_handler), and from url_handler.url_handler import ...
+# by exposing this module under the package-style name at runtime when
+# imported as top-level module via sys.path insertion in tests.
+module_name = __name__
+if module_name == "url_handler":
+    # Pretend to be a package to allow submodule imports
+    try:
+        __path__  # type: ignore # may already exist
+    except NameError:
+        __path__ = []  # type: ignore
+
+    # Ensure attribute access for url_handler.url_handler resolves to this module
+    sys.modules.setdefault("url_handler.url_handler", sys.modules[module_name])
+
+    # Map url_handler.data_retrieval to the top-level data_retrieval module
+    try:
+        dr_mod = importlib.import_module("data_retrieval")
+        sys.modules.setdefault("url_handler.data_retrieval", dr_mod)
+    except Exception:
+        # If data_retrieval isn't importable yet, skip mapping; typical test imports
+        # import url_handler first which triggers this mapping before importing
+        # data_retrieval via package path in later imports.
+        pass
+    # Export expected attributes when importing the package name alone
+    __all__ = [
+        "URLHandler",
+        "handle_url",
+        "URLCategory",
+        "URLData",
+        "read_urls_from_file",
+        "process_url_file",
+        "get_valid_urls",
+        "get_urls_by_category",
+        "get_processing_summary",
+    ]

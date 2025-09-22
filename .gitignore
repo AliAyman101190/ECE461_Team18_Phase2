@@ -15,3 +15,6 @@ __pycache__/
 
 # Logging will clutter repo
 *.log
+
+#local folder
+local/
