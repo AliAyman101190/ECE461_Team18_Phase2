@@ -16,7 +16,7 @@ from pathlib import Path # filepath handling
 from typing import List, Dict, Any, Optional # type annotations
 
 # imports from modules
-from url_handler import URLHandler
+from url_handler import URLHandler, handle_url, URLCategory
 from metric_calculator import MetricCalculator
 # from logger import setup_logger
 logger = logging.getLogger(__name__)
@@ -185,12 +185,12 @@ class CLIController:
         try:
             urls = self.read_url(url_file_path)
 
-            # filter model urls
+            # filter model urls (currently: keep valid GitHub/NPM/HuggingFace URLs)
             model_urls = []
             for url in urls:
                 try:
-                    url_data = self.url_handler.parse_url(url) # need to see George's function
-                    if url_data and url_data.get('type') == 'MODEL': # need to see Alex's code
+                    url_data = handle_url(url)
+                    if url_data.is_valid and url_data.category in {URLCategory.GITHUB, URLCategory.NPM, URLCategory.HUGGINGFACE}:
                         model_urls.append(url)
                 except Exception:
                     continue

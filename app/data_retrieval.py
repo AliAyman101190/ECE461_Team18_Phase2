@@ -337,16 +337,46 @@ class DataRetriever:
         time.sleep(self.rate_limit_delay)
         
         if url_data.category == URLCategory.GITHUB:
-            return self.github_client.get_repository_data(url_data.owner, url_data.repository)
+            owner = url_data.owner
+            repo = url_data.repository
+            if owner is None or repo is None:
+                return RepositoryData(
+                    platform="github",
+                    identifier=url_data.unique_identifier or "unknown",
+                    name=repo or "unknown",
+                    success=False,
+                    error_message="Missing owner or repository for GitHub URL"
+                )
+            return self.github_client.get_repository_data(owner, repo)
         elif url_data.category == URLCategory.NPM:
-            return self.npm_client.get_package_data(url_data.package_name)
+            package_name = url_data.package_name
+            if package_name is None:
+                return RepositoryData(
+                    platform="npm",
+                    identifier=url_data.unique_identifier or "unknown",
+                    name="unknown",
+                    success=False,
+                    error_message="Missing package name for NPM URL"
+                )
+            return self.npm_client.get_package_data(package_name)
         elif url_data.category == URLCategory.HUGGINGFACE:
-            return self.huggingface_client.get_model_data(url_data.unique_identifier)
+            identifier = url_data.unique_identifier
+            if identifier is None:
+                return RepositoryData(
+                    platform="huggingface",
+                    identifier="unknown",
+                    name="unknown",
+                    success=False,
+                    error_message="Missing identifier for Hugging Face URL"
+                )
+            return self.huggingface_client.get_model_data(identifier)
         else:
+            identifier = url_data.unique_identifier or "unknown"
+            name = identifier.split('/')[-1] if '/' in identifier else identifier
             return RepositoryData(
                 platform=url_data.category.value,
-                identifier=url_data.unique_identifier,
-                name=url_data.unique_identifier.split('/')[-1] if '/' in url_data.unique_identifier else url_data.unique_identifier,
+                identifier=identifier,
+                name=name,
                 success=False,
                 error_message=f"Unsupported platform: {url_data.category.value}"
             )
