@@ -16,19 +16,19 @@ if app_dir not in sys.path:
 from app.metric_calculator import MetricCalculator
 from app.submetrics import *
 
-
 # Ensure logs directory exists
 os.makedirs(os.path.join(os.path.dirname(__file__), '..', 'logs'), exist_ok=True)
-LOG_PATH = os.path.join(os.path.dirname(__file__), '..', 'logs', 'metric_tests.log')
+LOG_PATH = os.path.join(os.path.dirname(__file__), '..', 'logs', 'test_metrics.log')
 
-# Configure test logging to write to logs/metric_tests.log
-logger = logging.getLogger('metric_tests')
+# Configure test logging to write to logs/test_metrics.log
+logger = logging.getLogger('test_metrics')
 logger.setLevel(logging.DEBUG)
-file_handler = logging.FileHandler(LOG_PATH, mode='w')
+file_handler = logging.FileHandler(LOG_PATH, mode='w', encoding='utf-8')
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
-if not logger.handlers:
-    logger.addHandler(file_handler)
+# if not logger.handlers:
+logger.handlers = []  # Clear existing handlers to avoid duplicate logs in some environments
+logger.addHandler(file_handler)
 
 
 @pytest.fixture(autouse=True)
@@ -183,7 +183,7 @@ def test_metric_calculator_timeout_handling(monkeypatch):
         def __init__(self):
             self.name = "slow_metric"
             self.weight = 0.1
-        def calculate_metric(self, data, category):
+        def calculate_metric(self, data):
             time.sleep(0.01)
             return 1.0
         def calculate_latency(self):
@@ -196,7 +196,7 @@ def test_metric_calculator_timeout_handling(monkeypatch):
         def __init__(self):
             self.name = "failing"
             self.weight = 0.1
-        def calculate_metric(self, data, category):
+        def calculate_metric(self, data):
             raise RuntimeError("boom")
         def calculate_latency(self):
             return 0
