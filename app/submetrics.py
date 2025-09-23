@@ -1,6 +1,7 @@
+import os
+import re
 import time
 import json
-import re
 import logging
 from datetime import datetime, timezone
 from typing import * 
@@ -9,6 +10,11 @@ from metric import Metric
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, filename='metric_calculator.log', filemode='w', 
                     format='%(asctime)s - %(levelname)s - %(message)s')
+
+HF_TOKEN = os.environ['HF_TOKEN']
+
+# TODO: Call Purdue Gen AI to assess performance metric (line 568)
+# TODO: Use HF API somewhere
 
 class SizeMetric(Metric):
     """Calculates size compatibility scores for different hardware platforms"""
@@ -48,6 +54,7 @@ class SizeMetric(Metric):
             return scores
             
         except Exception as e:
+            logger.error(f"Error calculating SizeMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             # Return minimum scores on error
             return {hw: 0.0 for hw in self.hardware_limits.keys()}
@@ -100,6 +107,7 @@ class LicenseMetric(Metric):
             return score
             
         except Exception as e:
+            logger.error(f"Error calculating LicenseMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
     
@@ -181,6 +189,7 @@ class RampUpMetric(Metric):
             return min(1.0, score)
             
         except Exception as e:
+            logger.error(f"Error calculating RampUpMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
     
@@ -281,6 +290,7 @@ class BusFactorMetric(Metric):
             return min(1.0, score)
             
         except Exception as e:
+            logger.error(f"Error calculating BusFactorMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
     
@@ -373,6 +383,7 @@ class AvailableScoreMetric(Metric):
             return min(1.0, score)
             
         except Exception as e:
+            logger.error(f"Error calculating AvailableScoreMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
     
@@ -435,6 +446,7 @@ class DatasetQualityMetric(Metric):
             return score
             
         except Exception as e:
+            logger.error(f"Error calculating DatasetQualityMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
     
@@ -484,6 +496,7 @@ class CodeQualityMetric(Metric):
             return score
             
         except Exception as e:
+            logger.error(f"Error calculating CodeQualityMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
     
@@ -548,6 +561,7 @@ class PerformanceMetric(Metric):
             return min(1.0, score)
             
         except Exception as e:
+            logger.error(f"Error calculating PerformanceMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
     
