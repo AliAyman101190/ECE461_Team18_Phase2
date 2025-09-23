@@ -7,8 +7,10 @@ import logging
 from metric import Metric
 from submetrics import *
 
+os.makedirs('logs', exist_ok=True)
+LOG_FILE = os.path.join('logs', 'metric_calculator.log')
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, filename='metric_calculator.log', filemode='w', 
+logging.basicConfig(level=logging.INFO, filename=LOG_FILE, filemode='w', 
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 class MetricCalculator:
@@ -169,10 +171,10 @@ def test_metric_calculator():
     # Sample HuggingFace model data for testing
     sample_model_data = {
         "author": "google",
-        "downloads": 50000,
-        "likes": 150,
+        "downloads": 150000,
+        "likes": 1500,
         "license": "lgpl-2.1",
-        "lastModified": "2024-08-15T10:30:00Z",
+        "lastModified": "2025-08-15T10:30:00Z",
         "readme": """# Model Name: Gemini-2.5
 
         ## license: lgpl-2.1
@@ -184,14 +186,16 @@ def test_metric_calculator():
         Trained on a curated dataset of high-quality text.
         
         ## Performance
-        Achieves 85.2% accuracy on benchmark tasks.
+        Achieves 95.2% accuracy on benchmark tasks.
+        F1 score: 0.92
+        BLEU: 0.99
         """,
-        "siblings": [
-            {"rfilename": "config.json"},
-            {"rfilename": "pytorch_model.bin"},
-            {"rfilename": "example.py"},
-            {"rfilename": "requirements.txt"}
-        ],
+        # "siblings": [
+        #     {"rfilename": "config.json"},
+        #     {"rfilename": "pytorch_model.bin"},
+        #     {"rfilename": "example.py"},
+        #     {"rfilename": "requirements.txt"}
+        # ],
         "tags": ["text-generation", "pytorch"],
         "datasets": ["common_voice"],
         "size": 1073741824  # 1GB in bytes
