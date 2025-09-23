@@ -112,7 +112,7 @@ def test_submetrics_basic_contract(cls):
     # Should accept both dict and json string for consistency (some implementations expect json)
     data = sample_model_data_dict()
     # call with json string
-    score = instance.calculate_metric(json.dumps(data), "MODEL")
+    score = instance.calculate_metric(json.dumps(data))
 
     # score should be float or dict (size-like results). Accept 0.0 as placeholder.
     assert isinstance(score, (float, dict))
@@ -132,43 +132,43 @@ def test_all_submetric_edge_cases():
 
     # SizeMetric: missing size -> default 1.0 GB
     sm = SizeMetric()
-    scores = sm.calculate_metric(empty, "MODEL")
+    scores = sm.calculate_metric(empty)
     assert isinstance(scores, dict)
     for k, v in scores.items():
         assert 0.0 <= v <= 1.0
 
     # LicenseMetric: unknown license -> low but non-zero
     lm = LicenseMetric()
-    assert lm.calculate_metric({}, "MODEL") in (0.1, 0.5, 0.3)
+    assert lm.calculate_metric({}) in (0.1, 0.5, 0.3)
 
     # RampUpMetric: no README, no siblings
     rm = RampUpMetric()
-    rscore = rm.calculate_metric({}, "MODEL")
+    rscore = rm.calculate_metric({})
     assert 0.0 <= rscore <= 1.0
 
     # BusFactorMetric: missing dates and contributors
     bm = BusFactorMetric()
-    bscore = bm.calculate_metric({}, "MODEL")
+    bscore = bm.calculate_metric({})
     assert 0.0 <= bscore <= 1.0
 
     # AvailableScoreMetric: siblings empty
     am = AvailableScoreMetric()
-    ascore = am.calculate_metric({}, "MODEL")
+    ascore = am.calculate_metric({})
     assert 0.0 <= ascore <= 1.0
 
     # DatasetQualityMetric: unknown dataset
     dm = DatasetQualityMetric()
-    dscore = dm.calculate_metric({"datasets": ["some_weird_dataset"]}, "MODEL")
+    dscore = dm.calculate_metric({"datasets": ["some_weird_dataset"]})
     assert 0.0 <= dscore <= 1.0
 
     # CodeQualityMetric: siblings present but non-typical names
     cm = CodeQualityMetric()
-    cscore = cm.calculate_metric({"siblings": [{"rfilename": "weird.bin"}]}, "MODEL")
+    cscore = cm.calculate_metric({"siblings": [{"rfilename": "weird.bin"}]})
     assert 0.0 <= cscore <= 1.0
 
     # PerformanceMetric: numeric in README but no indicators
     pm = PerformanceMetric()
-    pscore = pm.calculate_metric({"readme": "Value 0.99"}, "MODEL")
+    pscore = pm.calculate_metric({"readme": "Value 0.99"})
     assert 0.0 <= pscore <= 1.0
 
     logger.info('Finished test_all_submetric_edge_cases')
