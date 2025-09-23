@@ -2,6 +2,7 @@ import time
 import json
 import re
 import logging
+from datetime import datetime, timezone
 from typing import * 
 from metric import Metric
 
@@ -26,7 +27,7 @@ class SizeMetric(Metric):
         }
         logger.info("SizeMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str, category: str) -> Dict[str, float]:
+    def calculate_metric(self, data: str) -> Dict[str, float]:
         """Calculate size scores for each hardware type"""
         start_time = time.time()
         
@@ -87,7 +88,7 @@ class LicenseMetric(Metric):
         }
         logger.info("LicenseMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str, category: str) -> float:
+    def calculate_metric(self, data: str) -> float:
         start_time = time.time()
         
         try:
@@ -152,7 +153,7 @@ class RampUpMetric(Metric):
         self.weight = 0.125
         logger.info("RampUpMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str, category: str) -> float:
+    def calculate_metric(self, data: str) -> float:
         start_time = time.time()
         
         try:
@@ -256,7 +257,7 @@ class BusFactorMetric(Metric):
         self.weight = 0.125
         logger.info("BusFactorMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str, category: str) -> float:
+    def calculate_metric(self, data: str) -> float:
         start_time = time.time()
         
         try:
@@ -325,7 +326,6 @@ class BusFactorMetric(Metric):
         
         # Parse date and calculate days since last update
         try:
-            from datetime import datetime, timezone
             last_date = datetime.fromisoformat(last_modified.replace('Z', '+00:00'))
             days_old = (datetime.now(timezone.utc) - last_date).days
             
@@ -353,7 +353,7 @@ class AvailableScoreMetric(Metric):
         self.weight = 0.125
         logger.info("AvailableScoreMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str, category: str) -> float:
+    def calculate_metric(self, data: str) -> float:
         start_time = time.time()
         
         try:
@@ -422,7 +422,7 @@ class DatasetQualityMetric(Metric):
         self.weight = 0.125
         logger.info("DatasetQualityMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str, category: str) -> float:
+    def calculate_metric(self, data: str) -> float:
         start_time = time.time()
         
         try:
@@ -471,7 +471,7 @@ class CodeQualityMetric(Metric):
         self.weight = 0.125
         logger.info("CodeQualityMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str, category: str) -> float:
+    def calculate_metric(self, data: str) -> float:
         start_time = time.time()
         
         try:
@@ -528,7 +528,7 @@ class PerformanceMetric(Metric):
         self.weight = 0.125
         logger.info("PerformanceMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str, category: str) -> float:
+    def calculate_metric(self, data: str) -> float:
         start_time = time.time()
         
         try:

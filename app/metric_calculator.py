@@ -1,9 +1,9 @@
+import os 
 import time
 import json
-from typing import Dict, Any, List, Tuple
+from typing import * 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
-
 from metric import Metric
 from submetrics import *
 
@@ -73,7 +73,7 @@ class MetricCalculator:
         }
         
         # Execute all metrics in parallel
-        metric_results = self._calculate_metrics_parallel(model_data, category)
+        metric_results = self._calculate_metrics_parallel(model_data)
         
         # Process results and calculate net score
         net_score = 0.0
@@ -97,13 +97,12 @@ class MetricCalculator:
         
         return results
     
-    def _calculate_metrics_parallel(self, model_data: str, category: str) -> Dict[Metric, Tuple[Any, int]]:
+    def _calculate_metrics_parallel(self, model_data: str) -> Dict[Metric, Tuple[Any, int]]:
         """
         Execute all metric calculations in parallel using ThreadPoolExecutor.
         
         Args:
             model_data: Model information as JSON string
-            category: Resource category
             
         Returns:
             Dictionary mapping metrics to (score, latency) tuples
@@ -111,13 +110,12 @@ class MetricCalculator:
         results = {}
         
         # Determine optimal thread count (don't exceed number of metrics or system cores)
-        import os
-        max_workers = min(len(self.metrics), os.cpu_count() or 4)
+        max_workers: int = min(len(self.metrics), os.cpu_count() or 4)
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all metric calculations
             future_to_metric = {
-                executor.submit(self._safe_calculate_metric, metric, model_data, category): metric
+                executor.submit(self._safe_calculate_metric, metric, model_data): metric
                 for metric in self.metrics
             }
             
@@ -133,21 +131,20 @@ class MetricCalculator:
         
         return results
     
-    def _safe_calculate_metric(self, metric: Metric, model_data: str, category: str) -> Tuple[Any, int]:
+    def _safe_calculate_metric(self, metric: Metric, model_data: str) -> Tuple[Any, int]:
         """
         Safely calculate a single metric with error handling and timing.
         
         Args:
             metric: The metric calculator to run
             model_data: Model information
-            category: Resource category
             
         Returns:
             Tuple of (score, latency_ms)
         """
         try:
             # Calculate the metric score
-            score = metric.calculate_metric(model_data, category)
+            score = metric.calculate_metric(model_data)
             
             # Get the latency from the metric
             latency = metric.calculate_latency()
@@ -160,20 +157,25 @@ class MetricCalculator:
     
     def get_metric_weights(self) -> Dict[str, float]:
         """Return the current metric weights for transparency."""
+        # check if self.metrics is not None
+        if not self.metrics:
+            return {}
         return {metric.name: metric.weight for metric in self.metrics}
 
 
 def test_metric_calculator():
-    """Test function to verify MetricCalculator functionality."""
+    """Simple test function to verify MetricCalculator functionality."""
     
     # Sample HuggingFace model data for testing
     sample_model_data = {
         "author": "google",
         "downloads": 50000,
         "likes": 150,
-        "license": "apache-2.0",
+        "license": "lgpl-2.1",
         "lastModified": "2024-08-15T10:30:00Z",
-        "readme": """# Model Name
+        "readme": """# Model Name: Gemini-2.5
+
+        ## license: lgpl-2.1
         
         ## Usage
         This model can be used for text generation tasks.
