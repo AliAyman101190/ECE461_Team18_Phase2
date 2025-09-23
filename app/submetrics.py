@@ -2,16 +2,22 @@ import os
 import re
 import time
 import json
+import requests
 import logging
 from datetime import datetime, timezone
 from typing import * 
 from metric import Metric
+from dotenv import load_dotenv
+load_dotenv()
 
+os.makedirs('logs', exist_ok=True)
+LOG_FILE = os.path.join('logs', 'metric_calculator.log')
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, filename='metric_calculator.log', filemode='w', 
+logging.basicConfig(level=logging.INFO, filename=LOG_FILE, filemode='w', 
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-HF_TOKEN = os.environ['HF_TOKEN']
+# HF_TOKEN = os.environ['HF_TOKEN']
+GEN_AI_STUDIO_API_KEY = os.environ['GEN_AI_STUDIO_API_KEY']
 
 # TODO: Call Purdue Gen AI to assess performance metric (line 568)
 # TODO: Use HF API somewhere
@@ -329,7 +335,7 @@ class BusFactorMetric(Metric):
             return 0.2
     
     def _evaluate_activity(self, model_info: Dict[str, Any]) -> float:
-        """Evaluate recent activity"""
+        """Evaluate recent activity based on last modified date from Hugging Face API"""
         last_modified = model_info.get("lastModified")
         if not last_modified:
             return 0.2
@@ -537,9 +543,27 @@ class PerformanceMetric(Metric):
     
     def __init__(self) -> None:
         super().__init__()
-        self.name = "performance_claims"
-        self.weight = 0.125
+        self.name: str = "performance_claims"
+        self.weight: float = 0.125
+        self.system_prompt: str = self.get_system_prompt()
         logger.info("PerformanceMetric metric successfully initialized")
+
+    def get_system_prompt(self) -> str:
+        return """
+You are an expert in evaluating machine learning model performance claims based on README content and available benchmark files.
+Your task is to assess the credibility and quality of performance information provided for a given model.
+When evaluating the README, look for:
+- Explicit performance metrics (accuracy, F1 score, BLEU, etc.)
+- Benchmark results
+- Clear descriptions of evaluation methodology
+- Numerical results that suggest actual benchmarking was performed
+
+OUTPUT REQUIREMENTS:
+- Start your response with the determined score and a newline (e.g. '0.85\\n')
+- Return a float score between 0.0 and 1.0
+- The float should be the only content on the first line
+- The float should always be formatted to two decimal places
+"""
     
     def calculate_metric(self, data: str) -> float:
         start_time = time.time()
@@ -549,13 +573,15 @@ class PerformanceMetric(Metric):
             
             score = 0.0
             
-            # Check README for performance metrics (60% of score)
+            # Check README for performance metrics 
             readme_score = self._evaluate_performance_in_readme(model_info.get("readme", ""))
-            score += readme_score * 0.6
+            print(readme_score)
+            score += readme_score
             
-            # Check for evaluation files (40% of score)  
-            eval_score = self._check_evaluation_files(model_info)
-            score += eval_score * 0.4
+            # Check for evaluation files (20% of score)  
+            # eval_score = self._check_evaluation_files(model_info)
+            # print(eval_score)
+            # score += eval_score * 0.2
             
             self._latency = int((time.time() - start_time) * 1000)
             return min(1.0, score)
@@ -564,44 +590,81 @@ class PerformanceMetric(Metric):
             logger.error(f"Error calculating PerformanceMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
-    
+        
     def _evaluate_performance_in_readme(self, readme: str) -> float:
-        """Look for performance metrics in README"""
-        if not readme:
+        url = "https://genai.rcac.purdue.edu/api/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {GEN_AI_STUDIO_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        body = {
+            "model": "llama4:latest",
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": readme}
+            ],
+            "response_format": {"type": "text"},
+        }
+        try:
+            resp = requests.post(url, headers=headers, json=body)
+            resp.raise_for_status()
+
+            if resp.status_code != 200:
+                text = getattr(resp, 'text', '<no response body>')
+                raise requests.exceptions.RequestException(f"API returned status code {resp.status_code}: {text}")
+            logger.info("Successful GenAI Studio API response")
+
+            try:
+                resp_json = resp.json()
+            except Exception as e:
+                logger.error(f"Failed to parse JSON from Gen AI Studio response: {e}")
+                resp_json = None
+
+            try:
+                if not resp_json or not isinstance(resp_json, dict):
+                    raise ValueError("Empty or unexpected JSON response")
+
+                # Typical structure: { 'choices': [ { 'message': { 'content': "0.85\n..." } } ] }
+                content: str = resp_json['choices'][0]['message']['content']
+                # score: float = float(content.split('\n', 1)[0].strip())
+                match = re.match(r'^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(?:\n|\\n)', content)
+                score: float = float(match.group(1)) if match else 0.0 
+
+                logger.info(f"Successfully received performance score: {score}")
+                return clamp(score, 0.0, 1.0)
+            
+            except Exception as e:
+                logger.error(f"Could not extract score from Gen AI Studio response: {e}; resp_json: {resp_json}")
+                return 0.0
+        except Exception as e:
+            logger.error(f"Error calling Gen AI Studio API: {e}")
             return 0.0
-        
-        readme_lower = readme.lower()
-        performance_indicators = [
-            "accuracy", "f1", "bleu", "rouge", "perplexity", 
-            "benchmark", "evaluation", "performance", "results"
-        ]
-        
-        score = 0.0
-        for indicator in performance_indicators:
-            if indicator in readme_lower:
-                score += 0.2
-        
-        # Look for numerical results (suggests actual benchmarking)
-        if re.search(r'\d+\.\d+', readme) and any(ind in readme_lower for ind in performance_indicators):
-            score += 0.3
-        
-        return min(1.0, score)
     
-    def _check_evaluation_files(self, model_info: Dict[str, Any]) -> float:
-        """Check for evaluation or benchmark files"""
-        files = model_info.get("siblings", [])
-        if not files:
-            return 0.0
+    # def _check_evaluation_files(self, model_info: Dict[str, Any]) -> float:
+    #     """Check for evaluation or benchmark files"""
+    #     files = model_info.get("siblings", [])
+    #     if not files:
+    #         return 0.0
         
-        eval_indicators = ["eval", "benchmark", "test", "metric"]
+    #     eval_indicators = ["eval", "benchmark", "test", "metric"]
         
-        for file_info in files:
-            filename = file_info.get("rfilename", "").lower()
-            for indicator in eval_indicators:
-                if indicator in filename:
-                    return 1.0
+    #     for file_info in files:
+    #         filename = file_info.get("rfilename", "").lower()
+    #         for indicator in eval_indicators:
+    #             if indicator in filename:
+    #                 return 1.0
         
-        return 0.0
+    #     return 0.0
     
     def calculate_latency(self) -> int:
         return getattr(self, '_latency', 0)
+    
+def clamp(value: float, min_value: float = 0.0, max_value: float = 1.0) -> float:
+    """
+    Clip a float between min and max limits
+    
+    Why? Performance is faster than `numpy.clip()` and more readable than `min(max())`
+    """
+    if value < min_value: return min_value
+    if value > max_value: return max_value
+    return value
