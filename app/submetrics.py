@@ -19,8 +19,6 @@ logging.basicConfig(level=logging.INFO, filename=LOG_FILE, filemode='w',
 # HF_TOKEN = os.environ['HF_TOKEN']
 GEN_AI_STUDIO_API_KEY = os.environ['GEN_AI_STUDIO_API_KEY']
 
-# TODO: Call Purdue Gen AI to assess performance metric (line 568)
-# TODO: Use HF API somewhere
 
 class SizeMetric(Metric):
     """Calculates size compatibility scores for different hardware platforms"""
