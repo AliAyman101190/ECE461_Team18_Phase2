@@ -16,5 +16,13 @@ __pycache__/
 # Logging will clutter repo
 *.log
 
-#local folder
+# Local folder
 local/
+
+# Temp files
+app/temp*
+app/tmp*
+
+# Coverage files
+.cov*
+htmlcov/
