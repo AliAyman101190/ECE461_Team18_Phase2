@@ -6,13 +6,15 @@ These tests verify that the complete pipeline from URL processing
 to data retrieval works correctly together.
 """
 
+import os
+import sys
+import time
 import pytest
 import warnings
 from _pytest.warning_types import PytestUnknownMarkWarning
 
-import sys
-import os
 from unittest.mock import patch, Mock
+import tempfile
 
 # Add the app directory to Python path so we can import modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
@@ -270,8 +272,6 @@ class TestFileProcessingIntegration:
     
     def test_file_processing_pipeline(self):
         """Test complete pipeline with file input."""
-        import tempfile
-        import os
         
         # Create temporary file with test URLs
         test_urls = [
@@ -318,8 +318,7 @@ class TestPerformanceIntegration:
     """Test performance characteristics of the integration."""
     
     def test_processing_performance(self):
-        """Test that URL processing is fast enough."""
-        import time
+        """Test that URL processing is fast enough."""        
         
         urls = [
             "https://github.com/microsoft/typescript",
