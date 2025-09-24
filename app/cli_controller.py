@@ -19,8 +19,11 @@ from typing import List, Dict, Any, Optional # type annotations
 from url_handler import URLHandler, handle_url, URLCategory
 from metric_calculator import MetricCalculator
 # from logger import setup_logger
+
+os.makedirs('logs', exist_ok=True)
+LOG_FILE = os.path.join('logs', 'cli_controller.log')
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, filename='metric_calculator.log', filemode='w', 
+logging.basicConfig(level=logging.INFO, filename=LOG_FILE, filemode='w', 
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 class CLIController:
