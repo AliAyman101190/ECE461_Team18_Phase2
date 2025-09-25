@@ -6,37 +6,24 @@ import types
 import logging
 from urllib.parse import urlparse, parse_qs
 from typing import Dict, Any, Optional, Union, List
-from dataclasses import dataclass
-from enum import Enum
+# from dataclasses import dataclass
+# from enum import Enum
+from url_category import URLCategory
+from url_data import URLData
 
 os.makedirs('logs', exist_ok=True)
 LOG_FILE = os.path.join('logs', 'url_handler.log')
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, filemode='w', 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger.setLevel(logging.DEBUG)
+if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(LOG_FILE) for h in logger.handlers):
+    fh = logging.FileHandler(LOG_FILE, mode='w', encoding='utf-8')
+    fh.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+logger.propagate = False
 
-# Small startup log so tests and runs produce a trace
 logger.info("url_handler initialized; logging to %s", LOG_FILE)
-
-class URLCategory(Enum):
-    GITHUB = "github"
-    NPM = "npm"
-    HUGGINGFACE = "huggingface"
-    UNKNOWN = "unknown"
-
-
-@dataclass
-class URLData:
-    original_url: str
-    category: URLCategory
-    hostname: str
-    is_valid: bool
-    unique_identifier: Optional[str] = None
-    owner: Optional[str] = None
-    repository: Optional[str] = None
-    package_name: Optional[str] = None
-    version: Optional[str] = None
-    error_message: Optional[str] = None
 
 
 class URLHandler:
@@ -240,39 +227,69 @@ class URLHandler:
             url_data.error_message = f"Error processing URL: {str(e)}"
             logger.exception("handle_url: unexpected error processing %r", url_string)
             return url_data
-
-
-# File processing functions
-def read_urls_from_file(file_path: str) -> List[str]:
-    try:
-        logger.info("read_urls_from_file: reading URLs from %s", file_path)
-        with open(file_path, 'r', encoding='utf-8') as file:
+        
+    # File processing functions
+    def read_urls_from_file(self, file_path: str) -> List[Dict[str, str]]:
+        try:
+            logger.info("read_urls_from_file: reading URLs from %s", file_path)
             urls = []
-            for line_num, line in enumerate(file, 1):
-                url = line.strip()
-                if url and not url.startswith('#'):  # Skip empty lines and comments
-                    urls.append(url)
-            logger.info("read_urls_from_file: found %d candidate URLs", len(urls))
+            with open(file_path, 'r', encoding='utf-8') as file:
+                lines = file.readlines()
+                for line in lines:
+                    result = {}
+                    line = line.strip()
+                    code_url, dataset_url, model_url = line.split(',') # <code, dataset, model>
+                    # print(code_url, dataset_url, model_url)
+                    result['code'] = code_url.strip()
+                    result['dataset'] = dataset_url.strip()
+                    result['model'] = model_url.strip()
+                    urls.append(result)
             return urls
-    except FileNotFoundError:
-        raise FileNotFoundError(f"URL file not found: {file_path}")
-    except Exception as e:
-        raise IOError(f"Error reading URL file {file_path}: {str(e)}")
+                # urls = []
+                # for line_num, line in enumerate(file, 1):
+                #     url = line.strip()
+                #     if url and not url.startswith('#'):  # Skip empty lines and comments
+                #         urls.append(url)
+                # logger.info("read_urls_from_file: found %d candidate URLs", len(urls))
+                # return urls
+                # return list("") # remove after fixing this method
+        except FileNotFoundError:
+            raise FileNotFoundError(f"URL file not found: {file_path}")
+        except Exception as e:
+            raise IOError(f"Error reading URL file {file_path}: {str(e)}")
 
 
-def process_url_file(file_path: str) -> List[URLData]:
-    logger.info("process_url_file: starting processing for %s", file_path)
-    urls = read_urls_from_file(file_path)
-    handler = URLHandler()
+# # File processing functions
+# def read_urls_from_file(file_path: str) -> List[str]:
+#     try:
+#         logger.info("read_urls_from_file: reading URLs from %s", file_path)
+#         with open(file_path, 'r', encoding='utf-8') as file:
+#             urls = []
+#             for line_num, line in enumerate(file, 1):
+#                 url = line.strip()
+#                 if url and not url.startswith('#'):  # Skip empty lines and comments
+#                     urls.append(url)
+#             logger.info("read_urls_from_file: found %d candidate URLs", len(urls))
+#             return urls
+#     except FileNotFoundError:
+#         raise FileNotFoundError(f"URL file not found: {file_path}")
+#     except Exception as e:
+#         raise IOError(f"Error reading URL file {file_path}: {str(e)}")
+
+
+# def process_url_file(file_path: str) -> List[URLData]:
+#     logger.info("process_url_file: starting processing for %s", file_path)
+#     urls = read_urls_from_file(file_path)
+#     handler = URLHandler()
     
-    results = []
-    for url in urls:
-        logger.debug("process_url_file: handling URL %s", url)
-        result = handler.handle_url(url)
-        results.append(result)
-    logger.info("process_url_file: completed processing %d URLs", len(results))
+#     results = []
+#     for url in urls:
+#         logger.debug("process_url_file: handling URL %s", url)
+#         result = handler.handle_url(url)
+#         results.append(result)
+#     logger.info("process_url_file: completed processing %d URLs", len(results))
     
-    return results
+#     return results
 
 
 def get_valid_urls(results: List[URLData]) -> List[URLData]:
@@ -407,35 +424,36 @@ def handle_url(url_string: str) -> URLData:
 # is imported as url_handler), and from url_handler.url_handler import ...
 # by exposing this module under the package-style name at runtime when
 # imported as top-level module via sys.path insertion in tests.
-module_name = __name__
-if module_name == "url_handler":
-    # Pretend to be a package to allow submodule imports
-    try:
-        __path__  # type: ignore # may already exist
-    except NameError:
-        __path__ = []  # type: ignore
 
-    # Ensure attribute access for url_handler.url_handler resolves to this module
-    sys.modules.setdefault("url_handler.url_handler", sys.modules[module_name])
+# module_name = __name__
+# if module_name == "url_handler":
+#     # Pretend to be a package to allow submodule imports
+#     try:
+#         __path__  # type: ignore # may already exist
+#     except NameError:
+#         __path__ = []  # type: ignore
 
-    # Map url_handler.data_retrieval to the top-level data_retrieval module
-    try:
-        dr_mod = importlib.import_module("data_retrieval")
-        sys.modules.setdefault("url_handler.data_retrieval", dr_mod)
-    except Exception:
-        # If data_retrieval isn't importable yet, skip mapping; typical test imports
-        # import url_handler first which triggers this mapping before importing
-        # data_retrieval via package path in later imports.
-        pass
-    # Export expected attributes when importing the package name alone
-    __all__ = [
-        "URLHandler",
-        "handle_url",
-        "URLCategory",
-        "URLData",
-        "read_urls_from_file",
-        "process_url_file",
-        "get_valid_urls",
-        "get_urls_by_category",
-        "get_processing_summary",
-    ]
+#     # Ensure attribute access for url_handler.url_handler resolves to this module
+#     sys.modules.setdefault("url_handler.url_handler", sys.modules[module_name])
+
+#     # Map url_handler.data_retrieval to the top-level data_retrieval module
+#     try:
+#         dr_mod = importlib.import_module("data_retrieval")
+#         sys.modules.setdefault("url_handler.data_retrieval", dr_mod)
+#     except Exception:
+#         # If data_retrieval isn't importable yet, skip mapping; typical test imports
+#         # import url_handler first which triggers this mapping before importing
+#         # data_retrieval via package path in later imports.
+#         pass
+#     # Export expected attributes when importing the package name alone
+#     __all__ = [
+#         "URLHandler",
+#         "handle_url",
+#         "URLCategory",
+#         "URLData",
+#         "read_urls_from_file",
+#         "process_url_file",
+#         "get_valid_urls",
+#         "get_urls_by_category",
+#         "get_processing_summary",
+#     ]

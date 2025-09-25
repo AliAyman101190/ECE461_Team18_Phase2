@@ -11,10 +11,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 os.makedirs('logs', exist_ok=True)
-LOG_FILE = os.path.join('logs', 'metric_calculator.log')
+LOG_FILE = os.path.join('logs', 'submetrics.log')
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, filename=LOG_FILE, filemode='w', 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger.setLevel(logging.INFO)
+if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(LOG_FILE) for h in logger.handlers):
+    fh = logging.FileHandler(LOG_FILE, mode='w', encoding='utf-8')
+    fh.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+logger.propagate = False
+
+logger.info("submetrics initialized; logging to %s", LOG_FILE)
 
 # HF_TOKEN = os.environ['HF_TOKEN']
 GEN_AI_STUDIO_API_KEY = os.environ['GEN_AI_STUDIO_API_KEY']
@@ -37,13 +45,12 @@ class SizeMetric(Metric):
         }
         logger.info("SizeMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str) -> Dict[str, float]:
+    def calculate_metric(self, model_info: Dict[str, Any]) -> Dict[str, float]:
         """Calculate size scores for each hardware type"""
         start_time = time.time()
         
         try:
             # Parse model size from data (expecting JSON with model info)
-            model_info = json.loads(data) if isinstance(data, str) else data
             model_size_gb = self._get_model_size(model_info)
             
             scores = {}
@@ -74,7 +81,7 @@ class SizeMetric(Metric):
             return sum(float(f.get("size", 0)) for f in model_info["safetensors"]) / (1024**3)
         else:
             # Default assumption for unknown size
-            return 1.0
+            return 0.6
     
     def calculate_latency(self) -> int:
         return getattr(self, '_latency', 0)
@@ -90,7 +97,7 @@ class LicenseMetric(Metric):
         
         # LGPL v2.1 compatible licenses (higher scores)
         self.compatible_licenses = {
-            "lgpl-2.1", "lgpl", "mit", "bsd", "apache-2.0", "apache", "cc0-1.0"
+            "lgpl-2.1", "lgpl", "mit", "bsd", "apache-2.0", "apache license 2.0", "apache", "cc0-1.0"
         }
         
         # Problematic licenses (lower scores)  
@@ -99,11 +106,10 @@ class LicenseMetric(Metric):
         }
         logger.info("LicenseMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str) -> float:
+    def calculate_metric(self, model_info: Dict[str, Any]) -> float:
         start_time = time.time()
         
         try:
-            model_info = json.loads(data) if isinstance(data, str) else data
             license_text = self._extract_license(model_info)
             
             score = self._score_license(license_text)
@@ -142,15 +148,15 @@ class LicenseMetric(Metric):
         # Check for compatible licenses
         for compatible in self.compatible_licenses:
             if compatible in license_lower:
-                return 0.9  # High score for compatible licenses
+                return 1.0  # High score for compatible licenses
         
         # Check for problematic licenses  
         for problematic in self.problematic_licenses:
             if problematic in license_lower:
-                return 0.3  # Low score for incompatible licenses
+                return 0.4  # Low score for incompatible licenses
         
         # Unknown license but present
-        return 0.5
+        return 0.6
     
     def calculate_latency(self) -> int:
         return getattr(self, '_latency', 0)
@@ -165,29 +171,24 @@ class RampUpMetric(Metric):
         self.weight = 0.125
         logger.info("RampUpMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str) -> float:
+    def calculate_metric(self, model_info: Dict[str, Any]) -> float:
         start_time = time.time()
         
         try:
-            model_info = json.loads(data) if isinstance(data, str) else data
             
             score = 0.0
             
-            # Check for README quality (30% of score)
+            # Check for README quality (40% of score)
             readme_score = self._evaluate_readme(model_info.get("readme", ""))
-            score += readme_score * 0.3
+            score += readme_score * 0.4
             
-            # Check for example code/notebooks (25% of score)
-            examples_score = self._check_examples(model_info)
-            score += examples_score * 0.25
-            
-            # Check for clear model card/description (25% of score)
+            # Check for clear model card/description (20% of score)
             card_score = self._evaluate_model_card(model_info)
-            score += card_score * 0.25
+            score += card_score * 0.2
             
-            # Check for download/usage statistics (20% of score) 
+            # Check for download/usage statistics (40% of score) 
             popularity_score = self._evaluate_popularity(model_info)
-            score += popularity_score * 0.2
+            score += popularity_score * 0.4
             
             self._latency = int((time.time() - start_time) * 1000)
             return min(1.0, score)
@@ -217,45 +218,31 @@ class RampUpMetric(Metric):
         
         return min(1.0, score)
     
-    def _check_examples(self, model_info: Dict[str, Any]) -> float:
-        """Check for example code or notebooks"""
-        files = model_info.get("siblings", [])
-        if not files:
-            return 0.0
-        
-        example_indicators = ["example", "demo", "notebook", ".ipynb", "sample"]
-        
-        for file_info in files:
-            filename = file_info.get("rfilename", "").lower()
-            for indicator in example_indicators:
-                if indicator in filename:
-                    return 1.0
-        
-        return 0.0
-    
     def _evaluate_model_card(self, model_info: Dict[str, Any]) -> float:
         """Evaluate model card completeness"""
         score = 0.0
         
         if model_info.get("description"):
-            score += 0.4
+            score += 0.7
         if model_info.get("tags"):
-            score += 0.3  
+            score += 0.2  
         if model_info.get("datasets"):
-            score += 0.3
+            score += 0.1
         
         return min(1.0, score)
     
     def _evaluate_popularity(self, model_info: Dict[str, Any]) -> float:
         """Evaluate based on downloads and likes"""
-        downloads = model_info.get("downloads", 0)
+        downloads_last_month = model_info.get("downloads_last_month", 0)
         likes = model_info.get("likes", 0)
-        
+        stars = model_info.get("stars", 0)
+
         # Normalize scores
-        download_score = min(1.0, downloads / 10000)  # Scale to 10k downloads
+        download_score = min(1.0, downloads_last_month / 10000)  # Scale to 10k downloads
         like_score = min(1.0, likes / 100)  # Scale to 100 likes
-        
-        return (download_score + like_score) / 2
+        stars_score = min(1.0, stars / 100)  # Scale to 100 stars
+
+        return (download_score + like_score + stars_score) / 3
     
     def calculate_latency(self) -> int:
         return getattr(self, '_latency', 0)
@@ -270,12 +257,10 @@ class BusFactorMetric(Metric):
         self.weight = 0.125
         logger.info("BusFactorMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str) -> float:
+    def calculate_metric(self, model_info: Dict[str, Any]) -> float:
         start_time = time.time()
         
         try:
-            model_info = json.loads(data) if isinstance(data, str) else data
-            
             score = 0.0
             
             # Organization vs individual author (40% of score)
@@ -321,20 +306,20 @@ class BusFactorMetric(Metric):
     def _evaluate_contributors(self, model_info: Dict[str, Any]) -> float:
         """Evaluate based on number of contributors"""
         # This would ideally use git metadata, simplified for now
-        contributors = model_info.get("contributors", [])
+        num_contributors = model_info.get("contributors_count", 0)
         
-        if len(contributors) >= 5:
+        if num_contributors >= 10:
             return 1.0
-        elif len(contributors) >= 3:
+        elif num_contributors >= 6:
             return 0.7
-        elif len(contributors) >= 2:
+        elif num_contributors >= 3:
             return 0.5
         else:
             return 0.2
     
     def _evaluate_activity(self, model_info: Dict[str, Any]) -> float:
-        """Evaluate recent activity based on last modified date from Hugging Face API"""
-        last_modified = model_info.get("lastModified")
+        """Evaluate recent activity based on last modified date"""
+        last_modified = model_info.get("updated_at", None)
         if not last_modified:
             return 0.2
         
@@ -367,12 +352,10 @@ class AvailableScoreMetric(Metric):
         self.weight = 0.125
         logger.info("AvailableScoreMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str) -> float:
+    def calculate_metric(self, model_info: Dict[str, Any]) -> float:
         start_time = time.time()
         
         try:
-            model_info = json.loads(data) if isinstance(data, str) else data
-            
             score = 0.0
             
             # Dataset documentation (50% of score)
@@ -437,12 +420,10 @@ class DatasetQualityMetric(Metric):
         self.weight = 0.125
         logger.info("DatasetQualityMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str) -> float:
+    def calculate_metric(self, model_info: Dict[str, Any]) -> float:
         start_time = time.time()
         
         try:
-            model_info = json.loads(data) if isinstance(data, str) else data
-            
             # For now, base quality on dataset documentation and known datasets
             score = self._evaluate_dataset_reputation(model_info)
             
@@ -456,20 +437,21 @@ class DatasetQualityMetric(Metric):
     
     def _evaluate_dataset_reputation(self, model_info: Dict[str, Any]) -> float:
         """Evaluate based on known high-quality datasets"""
-        datasets = model_info.get("datasets", [])
-        if not datasets:
+        # datasets = model_info.get("datasets", [])
+        # if not datasets:
+        #     return 0.2
+        homepage = model_info.get("homepage", "").lower()
+        if not homepage:
             return 0.2
         
         high_quality_datasets = [
             "common_voice", "librispeech", "imagenet", "coco", "squad",
-            "glue", "superglue", "wikitext", "bookcorpus", "openwebtext"
+            "glue", "superglue", "wikitext", "bookcorpus", "openwebtext", "arxiv"
         ]
         
-        for dataset in datasets:
-            dataset_lower = str(dataset).lower()
-            for quality_dataset in high_quality_datasets:
-                if quality_dataset in dataset_lower:
-                    return 0.9
+        for dataset in high_quality_datasets:
+            if dataset in homepage:
+                return 0.9
         
         # Unknown datasets get moderate score
         return 0.5
@@ -487,12 +469,10 @@ class CodeQualityMetric(Metric):
         self.weight = 0.125
         logger.info("CodeQualityMetric metric successfully initialized")
     
-    def calculate_metric(self, data: str) -> float:
+    def calculate_metric(self, model_info: Dict[str, Any]) -> float:
         start_time = time.time()
         
         try:
-            model_info = json.loads(data) if isinstance(data, str) else data
-            
             # Simplified code quality assessment
             score = self._evaluate_code_presence(model_info)
             
@@ -557,23 +537,21 @@ When evaluating the README, look for:
 - Numerical results that suggest actual benchmarking was performed
 
 OUTPUT REQUIREMENTS:
-- Start your response with the determined score and a newline (e.g. '0.85\\n')
+- Start your response with the determined score and a newline character (e.g. '0.85\\n')
 - Return a float score between 0.0 and 1.0
-- The float should be the only content on the first line
-- The float should always be formatted to two decimal places
+- The float value should be the only content on the first line
+- The float value should always be formatted to two decimal places
 """
     
-    def calculate_metric(self, data: str) -> float:
+    def calculate_metric(self, model_info: Dict[str, Any]) -> float:
         start_time = time.time()
         
         try:
-            model_info = json.loads(data) if isinstance(data, str) else data
             
             score = 0.0
             
             # Have AI check README for performance metrics 
             readme_score = self._evaluate_performance_in_readme(model_info.get("readme", ""))
-            # print(readme_score)
             score += readme_score
             
             self._latency = int((time.time() - start_time) * 1000)
@@ -632,22 +610,6 @@ OUTPUT REQUIREMENTS:
         except Exception as e:
             logger.error(f"Error calling Gen AI Studio API: {e}")
             return 0.0
-    
-    # def _check_evaluation_files(self, model_info: Dict[str, Any]) -> float:
-    #     """Check for evaluation or benchmark files"""
-    #     files = model_info.get("siblings", [])
-    #     if not files:
-    #         return 0.0
-        
-    #     eval_indicators = ["eval", "benchmark", "test", "metric"]
-        
-    #     for file_info in files:
-    #         filename = file_info.get("rfilename", "").lower()
-    #         for indicator in eval_indicators:
-    #             if indicator in filename:
-    #                 return 1.0
-        
-    #     return 0.0
     
     def calculate_latency(self) -> int:
         return getattr(self, '_latency', 0)

@@ -5,41 +5,26 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from datetime import datetime
 import json
+import base64
 import logging
 
-from url_handler import URLData, URLCategory
+# from url_handler import URLData, URLCategory
+from url_data import URLData, RepositoryData
+from url_category import URLCategory
 
 os.makedirs('logs', exist_ok=True)
 LOG_FILE = os.path.join('logs', 'data_retrieval.log')
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, filemode='w', 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger.setLevel(logging.DEBUG)
+if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(LOG_FILE) for h in logger.handlers):
+    fh = logging.FileHandler(LOG_FILE, mode='w', encoding='utf-8')
+    fh.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+logger.propagate = False
 
 logger.info("data_retrieval initialized; logging to %s", LOG_FILE)
-
-@dataclass
-class RepositoryData:
-    platform: str
-    identifier: str
-    name: str
-    description: Optional[str] = None
-    stars: Optional[int] = None
-    forks: Optional[int] = None
-    watchers: Optional[int] = None
-    issues_count: Optional[int] = None
-    contributors_count: Optional[int] = None
-    language: Optional[str] = None
-    license: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    downloads_last_month: Optional[int] = None
-    dependencies: Optional[List[str]] = None
-    dev_dependencies: Optional[List[str]] = None
-    version: Optional[str] = None
-    homepage: Optional[str] = None
-    repository_url: Optional[str] = None
-    error_message: Optional[str] = None
-    success: bool = True
 
 
 class GitHubAPIClient:
@@ -96,6 +81,29 @@ class GitHubAPIClient:
             if repo_data.get('updated_at'):
                 updated_at = datetime.fromisoformat(repo_data['updated_at'].replace('Z', '+00:00'))
             
+            # Attempt to fetch README as raw text
+            readme = None
+            try:
+                readme_url = f"{self.base_url}/repos/{owner}/{repo}/readme"
+                # Prefer raw content when possible
+                r = self.session.get(readme_url, headers={"Accept": "application/vnd.github.v3.raw"}, timeout=10)
+                if r.status_code == 200:
+                    readme = r.text
+                else:
+                    r2 = self.session.get(readme_url, timeout=10)
+                    if r2.status_code == 200:
+                        j = r2.json()
+                        content_b64 = j.get("content")
+                        encoding = j.get("encoding", "")
+                        if content_b64 and encoding == "base64":
+                            try:
+                                readme = base64.b64decode(content_b64).decode("utf-8", errors="replace")
+                            except Exception:
+                                readme = None
+            except Exception:
+                logger.exception("GitHubAPIClient: failed to fetch README for %s/%s", owner, repo)
+                readme = None
+
             return RepositoryData(
                 platform="github",
                 identifier=f"{owner}/{repo}",
@@ -112,7 +120,8 @@ class GitHubAPIClient:
                 updated_at=updated_at,
                 homepage=repo_data.get('homepage'),
                 repository_url=repo_data.get('html_url'),
-                success=True
+                success=True,
+                readme=readme,
             )
             
         except requests.exceptions.RequestException as e:
@@ -218,7 +227,28 @@ class NPMAPIClient:
             repository_url = None
             if isinstance(repository_info, dict):
                 repository_url = repository_info.get('url', '').replace('git+', '').replace('.git', '')
-            
+
+            # Attempt to get README from registry or from repository
+            readme = None
+            try:
+                readme = package_data.get('readme')
+                if not readme and repository_url and 'github.com' in repository_url:
+                    import re
+                    m = re.search(r"github[./:]+([^/]+)/([^/]+)(?:\.git)?", repository_url)
+                    if m:
+                        owner = m.group(1)
+                        repo_name = m.group(2)
+                        # try common branches
+                        for branch in ("main", "master"):
+                            raw_url = f"https://raw.githubusercontent.com/{owner}/{repo_name}/{branch}/README.md"
+                            rr = self.session.get(raw_url, timeout=10)
+                            if rr.status_code == 200 and rr.text.strip():
+                                readme = rr.text
+                                break
+            except Exception:
+                logger.exception("NPMAPIClient: failed to fetch README for %s", package_name)
+                readme = None
+
             return RepositoryData(
                 platform="npm",
                 identifier=package_name,
@@ -233,7 +263,8 @@ class NPMAPIClient:
                 homepage=version_data.get('homepage'),
                 repository_url=repository_url,
                 license=version_data.get('license'),
-                success=True
+                success=True,
+                readme=readme,
             )
             
         except requests.exceptions.RequestException as e:
@@ -272,10 +303,11 @@ class NPMAPIClient:
 
 
 class HuggingFaceAPIClient:
-    def __init__(self):
+    def __init__(self, token: Optional[str] = None):
         self.base_url = "https://huggingface.co/api"
         self.session = requests.Session()
         self.session.headers.update({
+            "Authorization": f"Bearer {token}",
             "User-Agent": "ECE461-Package-Analyzer"
         })
     
@@ -312,7 +344,26 @@ class HuggingFaceAPIClient:
                 created_at = datetime.fromisoformat(model_data['createdAt'].replace('Z', '+00:00'))
             if model_data.get('lastModified'):
                 updated_at = datetime.fromisoformat(model_data['lastModified'].replace('Z', '+00:00'))
-            
+            # Attempt to obtain README / model card content
+            readme = None
+            try:
+                # check common fields in model_data
+                if isinstance(model_data, dict):
+                    # many HF responses include 'cardData' or 'readme'
+                    readme = model_data.get('readme') or model_data.get('cardData') or model_data.get('modelCard')
+                    if isinstance(readme, dict):
+                        # cardData may contain 'body' or 'content'
+                        readme = readme.get('body') or readme.get('content') or None
+                # fallback to raw README URL
+                if not readme:
+                    raw_url = f"https://huggingface.co/{identifier}/raw/main/README.md"
+                    r = self.session.get(raw_url, timeout=10)
+                    if r.status_code == 200:
+                        readme = r.text
+            except Exception:
+                logger.exception("HuggingFaceAPIClient: failed to fetch README for %s", identifier)
+                readme = None
+
             return RepositoryData(
                 platform="huggingface",
                 identifier=identifier,
@@ -324,7 +375,8 @@ class HuggingFaceAPIClient:
                 language=model_data.get('pipeline_tag'),  # Using pipeline_tag as language equivalent
                 license=model_data.get('license'),
                 repository_url=f"https://huggingface.co/{identifier}",
-                success=True
+                success=True,
+                readme=readme,
             )
             
         except requests.exceptions.RequestException as e:
@@ -348,19 +400,19 @@ class HuggingFaceAPIClient:
 
 
 class DataRetriever:
-    def __init__(self, github_token: Optional[str] = None, rate_limit_delay: float = 0.1):
+    def __init__(self, github_token: Optional[str] = None, hf_token: Optional[str] = None, rate_limit_delay: float = 0.1):
         self.github_client = GitHubAPIClient(github_token)
         self.npm_client = NPMAPIClient()
-        self.huggingface_client = HuggingFaceAPIClient()
+        self.huggingface_client = HuggingFaceAPIClient(hf_token)
         self.rate_limit_delay = rate_limit_delay
         logger.info("DataRetriever initialized (rate_limit_delay=%s)", rate_limit_delay)
     
-    def retrieve_data(self, url_data: URLData) -> RepositoryData:
-        if not url_data.is_valid or not url_data.unique_identifier:
+    def retrieve_data(self, url_data: Optional[URLData]) -> RepositoryData:
+        if not url_data or not url_data.is_valid or not url_data.unique_identifier:
             logger.warning("DataRetriever.retrieve_data: invalid URLData provided: %s", url_data)
             return RepositoryData(
-                platform=url_data.category.value,
-                identifier=url_data.unique_identifier or "unknown",
+                platform="unknown", #url_data.category.value,
+                identifier="unknown", #url_data.unique_identifier or 
                 name="unknown",
                 success=False,
                 error_message="Invalid URL data provided"
@@ -415,11 +467,11 @@ class DataRetriever:
             name = identifier.split('/')[-1] if '/' in identifier else identifier
             logger.warning("DataRetriever.retrieve_data: unsupported platform %s", url_data.category)
             return RepositoryData(
-                platform=url_data.category.value,
+                platform="unknown",
                 identifier=identifier,
                 name=name,
                 success=False,
-                error_message=f"Unsupported platform: {url_data.category.value}"
+                error_message=f"Unsupported platform"
             )
     
     def retrieve_batch_data(self, url_data_list: List[URLData]) -> List[RepositoryData]:
@@ -434,15 +486,15 @@ class DataRetriever:
         return results
 
 
-# Convenience functions
-def retrieve_data_for_urls(url_data_list: List[URLData], github_token: Optional[str] = None) -> List[RepositoryData]:
-    retriever = DataRetriever(github_token=github_token)
-    return retriever.retrieve_batch_data(url_data_list)
+# # Convenience functions -> fuck convenience functions ... should be called inconvenience functions cuz they just make me have to read way more motherfucking lines of code trying to understand whatever bullshit Cursor came up with 
+# def retrieve_data_for_urls(url_data_list: List[URLData], github_token: Optional[str] = None) -> List[RepositoryData]:
+#     retriever = DataRetriever(github_token=github_token)
+#     return retriever.retrieve_batch_data(url_data_list)
 
 
-def retrieve_data_for_url(url_data: URLData, github_token: Optional[str] = None) -> RepositoryData:
-    retriever = DataRetriever(github_token=github_token)
-    return retriever.retrieve_data(url_data)
+# def retrieve_data_for_url(url_data: URLData, github_token: Optional[str] = None) -> RepositoryData:
+#     retriever = DataRetriever(github_token=github_token)
+#     return retriever.retrieve_data(url_data)
 
 
 # if __name__ == "__main__":

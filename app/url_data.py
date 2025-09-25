@@ -10,7 +10,7 @@ from url_category import URLCategory
 @dataclass
 class URLData:
     original_url: str
-    category: URLCategory
+    category: Optional[URLCategory]
     hostname: str
     is_valid: bool
     unique_identifier: Optional[str] = None
@@ -44,3 +44,5 @@ class RepositoryData:
     repository_url: Optional[str] = None
     error_message: Optional[str] = None
     success: bool = True
+    siblings: Optional[List[str]] = None
+    readme: Optional[str] = None
