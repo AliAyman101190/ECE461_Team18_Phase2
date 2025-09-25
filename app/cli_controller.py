@@ -231,10 +231,11 @@ class CLIController:
             # test
             result = subprocess.run([
                 'python', '-m', 'pytest',
-                '--cov=.',
+                '--cov=app',
                 '--cov-report=term-missing',
                 '--tb=short',
-                '-v'
+                '-v',
+                './tests'
             ], capture_output=True, text=True, timeout=300) # 5 min timeout
 
             # parse results
