@@ -571,18 +571,13 @@ OUTPUT REQUIREMENTS:
             
             score = 0.0
             
-            # Check README for performance metrics 
+            # Have AI check README for performance metrics 
             readme_score = self._evaluate_performance_in_readme(model_info.get("readme", ""))
-            print(readme_score)
+            # print(readme_score)
             score += readme_score
             
-            # Check for evaluation files (20% of score)  
-            # eval_score = self._check_evaluation_files(model_info)
-            # print(eval_score)
-            # score += eval_score * 0.2
-            
             self._latency = int((time.time() - start_time) * 1000)
-            return min(1.0, score)
+            return score
             
         except Exception as e:
             logger.error(f"Error calculating PerformanceMetric: {e}")

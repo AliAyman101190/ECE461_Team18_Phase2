@@ -42,17 +42,16 @@ class MetricCalculator:
             "ramp_up_time": 0.20,      # High priority - ease of use
             "license": 0.15,           # High priority - legal compliance  
             "dataset_and_code_score": 0.15,  # High priority - documentation
-            "bus_factor": 0.15,        # High priority - maintainability
-            "performance_claims": 0.10, # Medium priority - evidence of quality
+            "performance_claims": 0.15, # High priority - evidence of quality
+            "bus_factor": 0.10,        # Medium priority - maintainability
             "code_quality": 0.10,      # Medium priority - code standards
             "dataset_quality": 0.10,   # Medium priority - data quality
             "size_score": 0.05        # Lower priority - deployment consideration
         }
         
         for metric in self.metrics:
-            # if metric.name in weight_config:
-            # metric.weight = weight_config[metric.name]
-            metric.weight = 0.125
+            metric.weight = weight_config[metric.name]
+            # metric.weight = 0.125
     
     def calculate_all_metrics(self, model_data: str, category: str = "MODEL") -> Dict[str, Any]:
         """
@@ -159,73 +158,66 @@ class MetricCalculator:
     
     def get_metric_weights(self) -> Dict[str, float]:
         """Return the current metric weights for transparency."""
-        # check if self.metrics is not None
         if not self.metrics:
             return {}
         return {metric.name: metric.weight for metric in self.metrics}
 
 
-def test_metric_calculator():
-    """Simple test function to verify MetricCalculator functionality."""
+# def test_metric_calculator():
+#     """Simple test function to verify MetricCalculator functionality."""
     
-    # Sample HuggingFace model data for testing
-    sample_model_data = {
-        "author": "google",
-        "downloads": 150000,
-        "likes": 1500,
-        "license": "lgpl-2.1",
-        "lastModified": "2025-08-15T10:30:00Z",
-        "readme": """# Model Name: Gemini-2.5
+#     # Sample HuggingFace model data for testing
+#     sample_model_data = {
+#         "author": "google",
+#         "downloads": 150000,
+#         "likes": 1500,
+#         "license": "lgpl-2.1",
+#         "lastModified": "2025-08-15T10:30:00Z",
+#         "readme": """# Model Name: Gemini-2.5
 
-        ## license: lgpl-2.1
+#         ## license: lgpl-2.1
         
-        ## Usage
-        This model can be used for text generation tasks.
+#         ## Usage
+#         This model can be used for text generation tasks.
         
-        ## Training Data
-        Trained on a curated dataset of high-quality text.
+#         ## Training Data
+#         Trained on a curated dataset of high-quality text.
         
-        ## Performance
-        Achieves 95.2% accuracy on benchmark tasks.
-        F1 score: 0.92
-        BLEU: 0.99
-        """,
-        # "siblings": [
-        #     {"rfilename": "config.json"},
-        #     {"rfilename": "pytorch_model.bin"},
-        #     {"rfilename": "example.py"},
-        #     {"rfilename": "requirements.txt"}
-        # ],
-        "tags": ["text-generation", "pytorch"],
-        "datasets": ["common_voice"],
-        "size": 1073741824  # 1GB in bytes
-    }
+#         ## Performance
+#         Achieves 95.2% accuracy on benchmark tasks.
+#         F1 score: 0.92
+#         BLEU: 0.99
+#         """,
+#         "tags": ["text-generation", "pytorch"],
+#         "datasets": ["common_voice"],
+#         "size": 1073741824  # 1GB in bytes
+#     }
     
-    calculator = MetricCalculator()
+#     calculator = MetricCalculator()
     
-    # Convert to JSON string as expected by the calculator
-    model_data_json = json.dumps(sample_model_data)
+#     # Convert to JSON string as expected by the calculator
+#     model_data_json = json.dumps(sample_model_data)
     
-    # Calculate all metrics
-    results = calculator.calculate_all_metrics(model_data_json, "MODEL")
+#     # Calculate all metrics
+#     results = calculator.calculate_all_metrics(model_data_json, "MODEL")
     
-    # Display results
-    print("Metric Calculation Results:")
-    print(f"Net Score: {results['net_score']:.3f}")
-    print(f"Net Score Latency: {results['net_score_latency']}ms")
-    print()
+#     # Display results
+#     print("Metric Calculation Results:")
+#     print(f"Net Score: {results['net_score']:.3f}")
+#     print(f"Net Score Latency: {results['net_score_latency']}ms")
+#     print()
     
-    # Display individual metric scores
-    for metric in calculator.metrics:
-        if f"{metric.name}_latency" in results:
-            score = results.get(metric.name, 0.0)
-            latency = results[f"{metric.name}_latency"]
+#     # Display individual metric scores
+#     for metric in calculator.metrics:
+#         if f"{metric.name}_latency" in results:
+#             score = results.get(metric.name, 0.0)
+#             latency = results[f"{metric.name}_latency"]
             
-            if isinstance(score, dict):
-                print(f"{metric.name}: {score} (latency: {latency}ms)")
-            else:
-                print(f"{metric.name}: {score:.3f} (latency: {latency}ms)")
+#             if isinstance(score, dict):
+#                 print(f"{metric.name}: {score} (latency: {latency}ms)")
+#             else:
+#                 print(f"{metric.name}: {score:.3f} (latency: {latency}ms)")
 
 
-if __name__ == "__main__":
-    test_metric_calculator()
+# if __name__ == "__main__":
+#     test_metric_calculator()
