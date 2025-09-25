@@ -10,8 +10,16 @@ from submetrics import *
 os.makedirs('logs', exist_ok=True)
 LOG_FILE = os.path.join('logs', 'metric_calculator.log')
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, filename=LOG_FILE, filemode='w', 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger.setLevel(logging.INFO)
+if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(LOG_FILE) for h in logger.handlers):
+    fh = logging.FileHandler(LOG_FILE, mode='w', encoding='utf-8')
+    fh.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+logger.propagate = False
+
+logger.info("metric_calculator initialized; logging to %s", LOG_FILE)
 
 class MetricCalculator:
     """
@@ -34,6 +42,7 @@ class MetricCalculator:
         
         # Configure weights based on Sarah's priorities from spec
         self._configure_weights()
+        logger.info("Metrics initialized with submetrics and weights")
     
     def _configure_weights(self) -> None:
         """Configure metric weights based on Sarah's stated priorities."""
@@ -53,7 +62,7 @@ class MetricCalculator:
             metric.weight = weight_config[metric.name]
             # metric.weight = 0.125
     
-    def calculate_all_metrics(self, model_data: str, category: str = "MODEL") -> Dict[str, Any]:
+    def calculate_all_metrics(self, model_data: Dict[str, Any], category: str = "MODEL") -> Dict[str, Any]:
         """
         Calculate all metrics for a model in parallel and return complete results.
         
@@ -93,12 +102,12 @@ class MetricCalculator:
             results[f"{metric.name}_latency"] = latency
         
         # Finalize net score and latency
-        results["net_score"] = min(1.0, max(0.0, net_score))
+        results["net_score"] = net_score 
         results["net_score_latency"] = int((time.time() - start_time) * 1000)
         
         return results
     
-    def _calculate_metrics_parallel(self, model_data: str) -> Dict[Metric, Tuple[Any, int]]:
+    def _calculate_metrics_parallel(self, model_data: Dict[str, Any]) -> Dict[Metric, Tuple[Any, int]]:
         """
         Execute all metric calculations in parallel using ThreadPoolExecutor.
         
@@ -132,7 +141,7 @@ class MetricCalculator:
         
         return results
     
-    def _safe_calculate_metric(self, metric: Metric, model_data: str) -> Tuple[Any, int]:
+    def _safe_calculate_metric(self, metric: Metric, model_data: Dict[str, Any]) -> Tuple[Any, int]:
         """
         Safely calculate a single metric with error handling and timing.
         
