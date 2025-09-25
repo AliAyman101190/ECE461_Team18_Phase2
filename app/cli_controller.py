@@ -169,6 +169,8 @@ class CLIController:
 
         # don't know if we need
 
+        ## DEFINITELY NEEDED
+
 
     def calc_net_score(self, results: Dict[str, Any]) -> float:
         """
@@ -254,7 +256,7 @@ class CLIController:
                 failed = 0
                 coverage = 0
 
-                if result.returncode == 0:
+                if result.returncode == 0: # this is problematic
                     passed = 20
                     failed = 0
                     coverage = 80
@@ -322,11 +324,11 @@ class CLIController:
             return 1
 
 
-def main() -> None:
+# def main() -> None:
 
-    controller = CLIController()
-    exit_code = controller.run()
-    sys.exit(exit_code)
+#     controller = CLIController()
+#     exit_code = controller.run()
+#     sys.exit(exit_code)
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

@@ -1,5 +1,6 @@
 """
 `app/clear_logs.py`
+
 Run this script to clear the logs directory if it gets too cluttered
 """
 
