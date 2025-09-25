@@ -84,20 +84,6 @@ class CLIController:
         logger.info("Installing dependencies.")
 
         try:
-            # required packages
-            # packages = [
-            #     'requests',
-            #     'pytest',
-            #     'pytest-cov',
-            #     'flake8',
-            #     'mypy',
-            #     'isort',
-            #     'huggingface-hub',
-            #     'transformers',
-            #     'torch',
-            #     'GitPython'
-            # ]
-
             # Use the current Python executable to run pip to avoid relying on a 'pip'
             # binary on PATH which may not exist in some environments.
             result = subprocess.run(
@@ -106,21 +92,7 @@ class CLIController:
                     text=True,
                     timeout=300 # 5 min timeout
                 )
-            
-            # for package in packages:
-            #     if logger:
-            #         logger.info(f"Installing {package}")
 
-            #     result = subprocess.run(
-            #         ['pip', 'install', '--user', package],
-            #         capture_output=True,
-            #         text=True,
-            #         timeout=300 # 5 min timeout
-            #     )
-
-            #     if result.returncode != 0:
-            #         print(f"Error installing {package}: {result.stderr}", file=sys.stderr)
-            #         return 1
 
             if result.returncode != 0:
                     logger.error(f"Error installing required packages.: {result.stderr}")
@@ -132,30 +104,7 @@ class CLIController:
         except Exception as e:
             print(f"Error during installation: {str(e)}", file=sys.stderr)
             return 1
-        
-    # def read_url(self, url_file_path: str) -> List[str]:
-    #     """
-    #     Read urls from specified file.
 
-    #     Returns: List of urls, one per line.
-    #     """
-
-    #     try:
-    #         path = Path(url_file_path)
-    #         if not path.exists():
-    #             raise FileNotFoundError(f"URL file not found: {url_file_path}")
-            
-    #         with open(path, 'r', encoding='ascii') as f:
-    #             urls = [line.strip() for line in f if line.strip()]
-
-    #         if logger:
-    #             logger.info(f"Read {len(urls)} URLs from {url_file_path}")
-
-    #         return urls
-        
-    #     except Exception as e:
-    #         print(f"Error reading URL file: {str(e)}", file=sys.stderr)
-    #         sys.exit(1)
 
     def process_single_model(self, data: Dict[str, Optional[URLData]]) -> Optional[Dict[str, Any]]:
         """
