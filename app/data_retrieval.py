@@ -445,24 +445,24 @@ def retrieve_data_for_url(url_data: URLData, github_token: Optional[str] = None)
     return retriever.retrieve_data(url_data)
 
 
-if __name__ == "__main__":
-    # Example usage
-    from url_handler import handle_url
+# if __name__ == "__main__":
+#     # Example usage
+#     from url_handler import handle_url
     
-    # Test with a GitHub repository
-    github_url = "https://github.com/microsoft/typescript"
-    url_data = handle_url(github_url)
+#     # Test with a GitHub repository
+#     github_url = "https://github.com/microsoft/typescript"
+#     url_data = handle_url(github_url)
     
-    if url_data.is_valid:
-        print(f"Processing URL: {github_url}")
-        print(f"Extracted identifier: {url_data.unique_identifier}")
+#     if url_data.is_valid:
+#         print(f"Processing URL: {github_url}")
+#         print(f"Extracted identifier: {url_data.unique_identifier}")
         
-        repo_data = retrieve_data_for_url(url_data)
+#         repo_data = retrieve_data_for_url(url_data)
         
-        if repo_data.success:
-            print(f"Repository: {repo_data.name}")
-            print(f"Description: {repo_data.description}")
-            print(f"Stars: {repo_data.stars}")
-            print(f"Language: {repo_data.language}")
-        else:
-            print(f"Error: {repo_data.error_message}")
+#         if repo_data.success:
+#             print(f"Repository: {repo_data.name}")
+#             print(f"Description: {repo_data.description}")
+#             print(f"Stars: {repo_data.stars}")
+#             print(f"Language: {repo_data.language}")
+#         else:
+#             print(f"Error: {repo_data.error_message}")

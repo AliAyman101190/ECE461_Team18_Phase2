@@ -319,88 +319,88 @@ def handle_url(url_string: str) -> URLData:
     return handler.handle_url(url_string)
 
 
-# Command-line interface and main execution
-def main():
-    import sys
+# # Command-line interface and main execution
+# def main():
+#     import sys
     
-    if len(sys.argv) < 2:
-        print("Usage: python url_handler.py <url_file_path>")
-        print("       python url_handler.py --test")
-        sys.exit(1)
+#     if len(sys.argv) < 2:
+#         print("Usage: python url_handler.py <url_file_path>")
+#         print("       python url_handler.py --test")
+#         sys.exit(1)
     
-    if sys.argv[1] == "--test":
-        # Run built-in tests
-        test_urls = [
-            "https://github.com/octocat/Hello-World",
-            "https://www.npmjs.com/package/express",
-            "https://huggingface.co/microsoft/DialoGPT-medium",
-            "https://invalid-url",
-            "not-a-url-at-all",
-            "https://github.com/microsoft/typescript",
-            "https://www.npmjs.com/package/@angular/core",
-            "https://huggingface.co/datasets/squad",
-        ]
+#     if sys.argv[1] == "--test":
+#         # Run built-in tests
+#         test_urls = [
+#             "https://github.com/octocat/Hello-World",
+#             "https://www.npmjs.com/package/express",
+#             "https://huggingface.co/microsoft/DialoGPT-medium",
+#             "https://invalid-url",
+#             "not-a-url-at-all",
+#             "https://github.com/microsoft/typescript",
+#             "https://www.npmjs.com/package/@angular/core",
+#             "https://huggingface.co/datasets/squad",
+#         ]
         
-        handler = URLHandler()
+#         handler = URLHandler()
         
-        print("URL Handler Test Results:")
-        print("=" * 50)
+#         print("URL Handler Test Results:")
+#         print("=" * 50)
         
-        for url in test_urls:
-            result = handler.handle_url(url)
-            print(f"\nURL: {url}")
-            print(f"Valid: {result.is_valid}")
-            print(f"Category: {result.category.value}")
-            print(f"Hostname: {result.hostname}")
-            print(f"Unique ID: {result.unique_identifier}")
-            if result.owner:
-                print(f"Owner: {result.owner}")
-            if result.repository:
-                print(f"Repository: {result.repository}")
-            if result.package_name:
-                print(f"Package: {result.package_name}")
-            if result.version:
-                print(f"Version: {result.version}")
-            if result.error_message:
-                print(f"Error: {result.error_message}")
-            print("-" * 30)
-    else:
-        # Process file
-        file_path = sys.argv[1]
-        try:
-            print(f"Processing URLs from file: {file_path}")
-            results = process_url_file(file_path)
-            summary = get_processing_summary(results)
+#         for url in test_urls:
+#             result = handler.handle_url(url)
+#             print(f"\nURL: {url}")
+#             print(f"Valid: {result.is_valid}")
+#             print(f"Category: {result.category.value}")
+#             print(f"Hostname: {result.hostname}")
+#             print(f"Unique ID: {result.unique_identifier}")
+#             if result.owner:
+#                 print(f"Owner: {result.owner}")
+#             if result.repository:
+#                 print(f"Repository: {result.repository}")
+#             if result.package_name:
+#                 print(f"Package: {result.package_name}")
+#             if result.version:
+#                 print(f"Version: {result.version}")
+#             if result.error_message:
+#                 print(f"Error: {result.error_message}")
+#             print("-" * 30)
+#     else:
+#         # Process file
+#         file_path = sys.argv[1]
+#         try:
+#             print(f"Processing URLs from file: {file_path}")
+#             results = process_url_file(file_path)
+#             summary = get_processing_summary(results)
             
-            print(f"\nProcessing Summary:")
-            print(f"Total URLs: {summary['total_urls']}")
-            print(f"Valid URLs: {summary['valid_count']}")
-            print(f"Invalid URLs: {summary['invalid_count']}")
-            print(f"GitHub URLs: {summary['categories']['github']}")
-            print(f"NPM URLs: {summary['categories']['npm']}")
-            print(f"Hugging Face URLs: {summary['categories']['huggingface']}")
-            print(f"Unknown URLs: {summary['categories']['unknown']}")
+#             print(f"\nProcessing Summary:")
+#             print(f"Total URLs: {summary['total_urls']}")
+#             print(f"Valid URLs: {summary['valid_count']}")
+#             print(f"Invalid URLs: {summary['invalid_count']}")
+#             print(f"GitHub URLs: {summary['categories']['github']}")
+#             print(f"NPM URLs: {summary['categories']['npm']}")
+#             print(f"Hugging Face URLs: {summary['categories']['huggingface']}")
+#             print(f"Unknown URLs: {summary['categories']['unknown']}")
             
-            print(f"\nDetailed Results:")
-            print("=" * 50)
-            for result in results:
-                status = "✓" if result.is_valid else "✗"
-                print(f"{status} {result.original_url}")
-                if result.is_valid:
-                    print(f"   Category: {result.category.value}")
-                    if result.unique_identifier:
-                        print(f"   ID: {result.unique_identifier}")
-                else:
-                    print(f"   Error: {result.error_message}")
-                print()
+#             print(f"\nDetailed Results:")
+#             print("=" * 50)
+#             for result in results:
+#                 status = "✓" if result.is_valid else "✗"
+#                 print(f"{status} {result.original_url}")
+#                 if result.is_valid:
+#                     print(f"   Category: {result.category.value}")
+#                     if result.unique_identifier:
+#                         print(f"   ID: {result.unique_identifier}")
+#                 else:
+#                     print(f"   Error: {result.error_message}")
+#                 print()
             
-        except (FileNotFoundError, IOError) as e:
-            print(f"Error: {e}")
-            sys.exit(1)
+#         except (FileNotFoundError, IOError) as e:
+#             print(f"Error: {e}")
+#             sys.exit(1)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
 # --- Compatibility shim for tests expecting package-style imports ---
 # Allows: from url_handler import ... (already works when this module

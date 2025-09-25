@@ -22,5 +22,6 @@ def clear_logs():
 
     print(f"Deleted {deleted} log file(s) from {logs_dir}")
 
-if __name__ == "__main__":
-    clear_logs()
+"""Uncomment and run as __main_ to clear logs"""
+# if __name__ == "__main__":
+#     clear_logs()
