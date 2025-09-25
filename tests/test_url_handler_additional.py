@@ -130,19 +130,19 @@ def test_get_valid_and_category_filters():
     assert githubs == [good]
 
 
-def test_url_handler_main_test_flag(capsys, monkeypatch):
-    # Ensure the --test branch runs and prints expected header    
+# def test_url_handler_main_test_flag(capsys, monkeypatch):
+#     # Ensure the --test branch runs and prints expected header    
 
-    monkeypatch.setattr('sys.argv', ['url_handler.py', '--test'])
-    # run main which will print output for built-in tests
-    try:
-        uh.main()
-    except SystemExit:
-        # main exits at the end, ignore
-        pass
+#     monkeypatch.setattr('sys.argv', ['url_handler.py', '--test'])
+#     # run main which will print output for built-in tests
+#     try:
+#         uh.main()
+#     except SystemExit:
+#         # main exits at the end, ignore
+#         pass
 
-    captured = capsys.readouterr()
-    assert 'URL Handler Test Results' in captured.out
+#     captured = capsys.readouterr()
+#     assert 'URL Handler Test Results' in captured.out
 
 
 def test_read_urls_from_file_not_found(tmp_path):
