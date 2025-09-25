@@ -26,3 +26,6 @@ app/tmp*
 # Coverage files
 .cov*
 htmlcov/
+
+# Sample I/O files
+samples/
