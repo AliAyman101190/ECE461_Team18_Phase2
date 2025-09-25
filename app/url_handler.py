@@ -252,7 +252,6 @@ class URLHandler:
                 #         urls.append(url)
                 # logger.info("read_urls_from_file: found %d candidate URLs", len(urls))
                 # return urls
-                # return list("") # remove after fixing this method
         except FileNotFoundError:
             raise FileNotFoundError(f"URL file not found: {file_path}")
         except Exception as e:
@@ -292,48 +291,48 @@ class URLHandler:
 #     return results
 
 
-def get_valid_urls(results: List[URLData]) -> List[URLData]:
-    return [result for result in results if result.is_valid]
+# def get_valid_urls(results: List[URLData]) -> List[URLData]:
+#     return [result for result in results if result.is_valid]
 
 
-def get_urls_by_category(results: List[URLData], category: URLCategory) -> List[URLData]:
-    return [result for result in results if result.category == category and result.is_valid]
+# def get_urls_by_category(results: List[URLData], category: URLCategory) -> List[URLData]:
+#     return [result for result in results if result.category == category and result.is_valid]
 
 
-def get_processing_summary(results: List[URLData]) -> Dict[str, Any]:
-    total_urls = len(results)
-    valid_urls = get_valid_urls(results)
-    invalid_urls = [result for result in results if not result.is_valid]
+# def get_processing_summary(results: List[URLData]) -> Dict[str, Any]:
+#     total_urls = len(results)
+#     valid_urls = get_valid_urls(results)
+#     invalid_urls = [result for result in results if not result.is_valid]
     
-    # Count by category
-    github_urls = get_urls_by_category(results, URLCategory.GITHUB)
-    npm_urls = get_urls_by_category(results, URLCategory.NPM)
-    huggingface_urls = get_urls_by_category(results, URLCategory.HUGGINGFACE)
-    unknown_urls = get_urls_by_category(results, URLCategory.UNKNOWN)
+#     # Count by category
+#     github_urls = get_urls_by_category(results, URLCategory.GITHUB)
+#     npm_urls = get_urls_by_category(results, URLCategory.NPM)
+#     huggingface_urls = get_urls_by_category(results, URLCategory.HUGGINGFACE)
+#     unknown_urls = get_urls_by_category(results, URLCategory.UNKNOWN)
     
-    return {
-        'total_urls': total_urls,
-        'valid_count': len(valid_urls),
-        'invalid_count': len(invalid_urls),
-        'categories': {
-            'github': len(github_urls),
-            'npm': len(npm_urls),
-            'huggingface': len(huggingface_urls),
-            'unknown': len(unknown_urls)
-        },
-        'valid_urls': valid_urls,
-        'invalid_urls': invalid_urls,
-        'github_urls': github_urls,
-        'npm_urls': npm_urls,
-        'huggingface_urls': huggingface_urls,
-        'unknown_urls': unknown_urls
-    }
+#     return {
+#         'total_urls': total_urls,
+#         'valid_count': len(valid_urls),
+#         'invalid_count': len(invalid_urls),
+#         'categories': {
+#             'github': len(github_urls),
+#             'npm': len(npm_urls),
+#             'huggingface': len(huggingface_urls),
+#             'unknown': len(unknown_urls)
+#         },
+#         'valid_urls': valid_urls,
+#         'invalid_urls': invalid_urls,
+#         'github_urls': github_urls,
+#         'npm_urls': npm_urls,
+#         'huggingface_urls': huggingface_urls,
+#         'unknown_urls': unknown_urls
+#     }
 
 
-# Convenience function for easy access
-def handle_url(url_string: str) -> URLData:
-    handler = URLHandler()
-    return handler.handle_url(url_string)
+# # Convenience function for easy access
+# def handle_url(url_string: str) -> URLData:
+#     handler = URLHandler()
+#     return handler.handle_url(url_string)
 
 
 # # Command-line interface and main execution
