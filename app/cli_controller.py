@@ -81,8 +81,7 @@ class CLIController:
         Returns: 0 for success, 1 for failure
         """
 
-        if logger:
-            logger.info("Installing dependencies.")
+        logger.info("Installing dependencies.")
 
         try:
             # required packages
@@ -125,8 +124,7 @@ class CLIController:
                     logger.error(f"Error installing required packages.: {result.stderr}")
                     return 1
                 
-            if logger:
-                logger.info("Installed all dependencies successfully.")
+            logger.info("Installed all dependencies successfully.")
             return 0
         
         except Exception as e:
@@ -283,8 +281,7 @@ class CLIController:
         Returns: 0 for success, 1 for failure
         """
 
-        if logger:
-            logger.info("Executing tests.")
+        logger.info("Executing tests.")
 
         try:
 
@@ -304,7 +301,7 @@ class CLIController:
             coverage_line = ''
 
             for line in lines:
-                if "passed" in line and "failed" in line:
+                if "passed" in line or "failed" in line:
                     test_line = line
                 elif "TOTAL" in line and "%" in line:
                     parts = line.split()
@@ -317,10 +314,10 @@ class CLIController:
                 failed = 0
                 coverage = 0
 
-                if result.returncode == 0: # this is problematic
-                    passed = 20
-                    failed = 0
-                    coverage = 80
+                # if result.returncode == 0: # this is problematic
+                #     passed = 20
+                #     failed = 0
+                #     coverage = 80
             else:
                 nums = re.findall(r'\d+', test_line)
                 if len(nums) >= 2:
@@ -339,8 +336,7 @@ class CLIController:
             # output test results
             print(f"{passed}/{total_tests} test cases passed. {coverage}% line coverage achieved.")
 
-            if logger:
-                logger.info(f"Test execution completed: {passed}/{total_tests} passed, {coverage}% coverage")
+            logger.info(f"Test execution completed: {passed}/{total_tests} passed, {coverage}% coverage")
 
             return result.returncode
         
@@ -363,10 +359,7 @@ class CLIController:
             args = self.parse_arguments()
             command = args.command
 
-            print(command) # for debugging
-
-            if logger:
-                logger.info(f"Executing command: {command}")
+            logger.info(f"Executing command: {command}")
 
             if command == 'install':
                 return self.install_dependencies()
@@ -379,7 +372,6 @@ class CLIController:
             print("Operation interrupted by user", file=sys.stderr)
             return 1
         except Exception as e:
-            print(f"Error: {str(e)}", file=sys.stderr)
-            if logger:
-                logger.error("Error: {str(e)}")
+            print(f"Error: {str(e)}")
+            logger.error(f"Error: {str(e)}")
             return 1
