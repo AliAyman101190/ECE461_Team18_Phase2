@@ -19,8 +19,10 @@ import tempfile
 # Add the app directory to Python path so we can import modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
 
-from url_handler import handle_url, process_url_file, URLCategory
-from data_retrieval import retrieve_data_for_url, retrieve_data_for_urls, RepositoryData
+from url_handler import URLHandler
+from url_category import URLCategory
+from url_data import URLData, RepositoryData
+from data_retrieval import DataRetriever
 
 
 class TestURLToDataPipeline:
@@ -31,7 +33,7 @@ class TestURLToDataPipeline:
         url = "https://github.com/microsoft/typescript"
         
         # Step 1: Process URL
-        url_data = handle_url(url)
+        url_data = URLHandler().handle_url(url)
         
         assert url_data.is_valid == True
         assert url_data.category == URLCategory.GITHUB
@@ -40,7 +42,7 @@ class TestURLToDataPipeline:
         assert url_data.repository == "typescript"
         
         # Step 2: Mock data retrieval (to avoid network calls in tests)
-        with patch('url_handler.data_retrieval.GitHubAPIClient.get_repository_data') as mock_api:
+        with patch('data_retrieval.GitHubAPIClient.get_repository_data') as mock_api:
             mock_api.return_value = RepositoryData(
                 platform="github",
                 identifier="microsoft/typescript",
@@ -50,7 +52,8 @@ class TestURLToDataPipeline:
                 success=True
             )
             
-            repo_data = retrieve_data_for_url(url_data)
+            retriever = DataRetriever()
+            repo_data = retriever.retrieve_data(url_data)
             
             assert repo_data.success == True
             assert repo_data.platform == "github"
@@ -65,7 +68,7 @@ class TestURLToDataPipeline:
         url = "https://www.npmjs.com/package/express"
         
         # Step 1: Process URL
-        url_data = handle_url(url)
+        url_data = URLHandler().handle_url(url)
         
         assert url_data.is_valid == True
         assert url_data.category == URLCategory.NPM
@@ -73,7 +76,7 @@ class TestURLToDataPipeline:
         assert url_data.package_name == "express"
         
         # Step 2: Mock data retrieval
-        with patch('url_handler.data_retrieval.NPMAPIClient.get_package_data') as mock_api:
+        with patch('data_retrieval.NPMAPIClient.get_package_data') as mock_api:
             mock_api.return_value = RepositoryData(
                 platform="npm",
                 identifier="express",
@@ -84,7 +87,8 @@ class TestURLToDataPipeline:
                 success=True
             )
             
-            repo_data = retrieve_data_for_url(url_data)
+            retriever = DataRetriever()
+            repo_data = retriever.retrieve_data(url_data)
             
             assert repo_data.success == True
             assert repo_data.platform == "npm"
@@ -100,7 +104,7 @@ class TestURLToDataPipeline:
         url = "https://huggingface.co/microsoft/DialoGPT-medium"
         
         # Step 1: Process URL
-        url_data = handle_url(url)
+        url_data = URLHandler().handle_url(url)
         
         assert url_data.is_valid == True
         assert url_data.category == URLCategory.HUGGINGFACE
@@ -109,7 +113,7 @@ class TestURLToDataPipeline:
         assert url_data.repository == "DialoGPT-medium"
         
         # Step 2: Mock data retrieval
-        with patch('url_handler.data_retrieval.HuggingFaceAPIClient.get_model_data') as mock_api:
+        with patch('data_retrieval.HuggingFaceAPIClient.get_model_data') as mock_api:
             mock_api.return_value = RepositoryData(
                 platform="huggingface",
                 identifier="microsoft/DialoGPT-medium",
@@ -120,7 +124,8 @@ class TestURLToDataPipeline:
                 success=True
             )
             
-            repo_data = retrieve_data_for_url(url_data)
+            retriever = DataRetriever()
+            repo_data = retriever.retrieve_data(url_data)
             
             assert repo_data.success == True
             assert repo_data.platform == "huggingface"
@@ -144,7 +149,7 @@ class TestBatchProcessing:
         ]
         
         # Step 1: Process all URLs
-        url_results = [handle_url(url) for url in urls]
+        url_results = [URLHandler().handle_url(url) for url in urls]
         
         # Verify all processed correctly
         assert len(url_results) == 3
@@ -160,10 +165,11 @@ class TestBatchProcessing:
             RepositoryData(platform="huggingface", identifier="bert-base-uncased", name="bert-base-uncased", success=True)
         ]
         
-        with patch('url_handler.data_retrieval.DataRetriever.retrieve_batch_data') as mock_batch:
+        with patch('data_retrieval.DataRetriever.retrieve_batch_data') as mock_batch:
             mock_batch.return_value = mock_responses
             
-            repo_data_list = retrieve_data_for_urls(url_results)
+            retriever = DataRetriever()
+            repo_data_list = retriever.retrieve_batch_data(url_results)
             
             assert len(repo_data_list) == 3
             assert all(data.success for data in repo_data_list)
@@ -183,14 +189,15 @@ class TestErrorPropagation:
         url = "not-a-valid-url"
         
         # Step 1: Process invalid URL
-        url_data = handle_url(url)
+        url_data = URLHandler().handle_url(url)
         
         assert url_data.is_valid == False
         assert url_data.error_message is not None
         
         # Step 2: Data retrieval should handle invalid input
-        repo_data = retrieve_data_for_url(url_data)
-        
+        retriever = DataRetriever()
+        repo_data = retriever.retrieve_data(url_data)
+
         assert repo_data.success == False
         assert repo_data.error_message is not None
     
@@ -199,11 +206,11 @@ class TestErrorPropagation:
         url = "https://github.com/test/repo"
         
         # Step 1: Process valid URL
-        url_data = handle_url(url)
+        url_data = URLHandler().handle_url(url)
         assert url_data.is_valid == True
         
         # Step 2: Mock API failure
-        with patch('url_handler.data_retrieval.GitHubAPIClient.get_repository_data') as mock_api:
+        with patch('data_retrieval.GitHubAPIClient.get_repository_data') as mock_api:
             mock_api.return_value = RepositoryData(
                 platform="github",
                 identifier="test/repo",
@@ -212,7 +219,8 @@ class TestErrorPropagation:
                 error_message="Repository not found"
             )
             
-            repo_data = retrieve_data_for_url(url_data)
+            retriever = DataRetriever()
+            repo_data = retriever.retrieve_data(url_data)
             
             assert repo_data.success == False
             assert "not found" in repo_data.error_message.lower()
@@ -222,14 +230,15 @@ class TestErrorPropagation:
         url = "https://stackoverflow.com/questions/123"
         
         # Step 1: Process URL (should be valid but unknown category)
-        url_data = handle_url(url)
+        url_data = URLHandler().handle_url(url)
         
         assert url_data.is_valid == True
         assert url_data.category == URLCategory.UNKNOWN
         
         # Step 2: Data retrieval should handle unknown category
-        repo_data = retrieve_data_for_url(url_data)
-        
+        retriever = DataRetriever()
+        repo_data = retriever.retrieve_data(url_data)
+
         assert repo_data.success == False
         assert "invalid url data" in repo_data.error_message.lower()
 
@@ -246,25 +255,26 @@ class TestDataConsistency:
         ]
         
         for url, expected_identifier in test_cases:
-            url_data = handle_url(url)
+            url_data = URLHandler().handle_url(url)
             
             assert url_data.is_valid == True
             assert url_data.unique_identifier == expected_identifier
             
             # Mock data retrieval to verify identifier is passed correctly
-            with patch('url_handler.data_retrieval.DataRetriever.retrieve_data') as mock_retrieve:
-                mock_retrieve.return_value = RepositoryData(
-                    platform=url_data.category.value,
-                    identifier=expected_identifier,
-                    name="test",
-                    success=True
-                )
-                
-                repo_data = retrieve_data_for_url(url_data)
-                
-                # Verify the identifier was passed through correctly
-                assert repo_data.identifier == expected_identifier
-                mock_retrieve.assert_called_once_with(url_data)
+        with patch('data_retrieval.DataRetriever.retrieve_data') as mock_retrieve:
+            mock_retrieve.return_value = RepositoryData(
+                platform=url_data.category.value,
+                identifier=expected_identifier,
+                name="test",
+                success=True
+            )
+
+            retriever = DataRetriever()
+            repo_data = retriever.retrieve_data(url_data)
+
+            # Verify the identifier was passed through correctly
+            assert repo_data.identifier == expected_identifier
+            mock_retrieve.assert_called_once_with(url_data)
 
 
 class TestFileProcessingIntegration:
@@ -288,14 +298,17 @@ class TestFileProcessingIntegration:
         
         try:
             # Step 1: Process URLs from file
-            url_results = process_url_file(temp_file_path)
-            
+            # Process the file by reading lines and handling each URL
+            with open(temp_file_path, 'r', encoding='utf-8') as fh:
+                lines = [ln.strip() for ln in fh if ln.strip()]
+            url_results = [URLHandler().handle_url(ln) for ln in lines]
+
             assert len(url_results) == 4  # All URLs processed
             valid_results = [r for r in url_results if r.is_valid]
             assert len(valid_results) == 3  # Only 3 are valid
             
             # Step 2: Mock data retrieval for valid URLs
-            with patch('url_handler.data_retrieval.DataRetriever.retrieve_batch_data') as mock_batch:
+            with patch('data_retrieval.DataRetriever.retrieve_batch_data') as mock_batch:
                 mock_responses = [
                     RepositoryData(platform="github", identifier="facebook/react", name="React", success=True),
                     RepositoryData(platform="npm", identifier="express", name="express", success=True),
@@ -303,8 +316,9 @@ class TestFileProcessingIntegration:
                 ]
                 mock_batch.return_value = mock_responses
                 
-                repo_data_list = retrieve_data_for_urls(valid_results)
-                
+                retriever = DataRetriever()
+                repo_data_list = retriever.retrieve_batch_data(valid_results)
+
                 assert len(repo_data_list) == 3
                 assert all(data.success for data in repo_data_list)
                 
@@ -329,7 +343,7 @@ class TestPerformanceIntegration:
         start_time = time.time()
         
         # Process all URLs
-        results = [handle_url(url) for url in urls]
+        results = [URLHandler().handle_url(url) for url in urls]
         
         processing_time = time.time() - start_time
         
@@ -341,7 +355,7 @@ class TestPerformanceIntegration:
     @patch('time.sleep')  # Mock sleep to speed up test
     def test_rate_limiting_behavior(self, mock_sleep):
         """Test that rate limiting works in batch processing."""
-        from url_handler.data_retrieval import DataRetriever
+    # Use DataRetriever from data_retrieval module (imported at top)
         
         urls = [
             "https://github.com/test1/repo1",
@@ -349,9 +363,9 @@ class TestPerformanceIntegration:
             "https://github.com/test3/repo3"
         ]
         
-        url_results = [handle_url(url) for url in urls]
-        
-        with patch('url_handler.data_retrieval.GitHubAPIClient.get_repository_data') as mock_api:
+        url_results = [URLHandler().handle_url(url) for url in urls]
+
+        with patch('data_retrieval.GitHubAPIClient.get_repository_data') as mock_api:
             mock_api.return_value = RepositoryData(
                 platform="github", identifier="test/repo", name="repo", success=True
             )

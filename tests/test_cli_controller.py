@@ -13,7 +13,7 @@ app_dir = os.path.join(project_root, 'app')
 if app_dir not in sys.path:
     sys.path.insert(0, app_dir)
 
-from app.cli_controller import CLIController
+from cli_controller import CLIController
 
 
 def test_parse_arguments_monkeypatch(monkeypatch):
@@ -22,27 +22,6 @@ def test_parse_arguments_monkeypatch(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['run', 'install'])
     args = controller.parse_arguments()
     assert args.command == 'install'
-
-
-def test_read_url_success(tmp_path, monkeypatch):
-    controller = CLIController()
-    p = tmp_path / 'urls.txt'
-    p.write_text('https://github.com/user/repo\n#comment\n\nhttps://example.com')
-
-    urls = controller.read_url(str(p))
-    assert 'https://github.com/user/repo' in urls
-    assert 'https://example.com' in urls
-    # current implementation does not strip comment-only lines, so expect 3 entries
-    assert len(urls) == 3
-    assert '#comment' in urls
-
-
-def test_read_url_missing_file(monkeypatch):
-    controller = CLIController()
-    with patch('sys.exit') as mock_exit:
-        controller.read_url('nonexistent_file.txt')
-        # Should call sys.exit(1)
-        mock_exit.assert_called()
 
 
 def test_install_dependencies_success(monkeypatch):

@@ -20,9 +20,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
 
 from data_retrieval import (
     DataRetriever, GitHubAPIClient, NPMAPIClient, HuggingFaceAPIClient,
-    RepositoryData, retrieve_data_for_url, retrieve_data_for_urls
+    RepositoryData
 )
-from url_handler import URLData, URLCategory
+from url_handler import URLHandler
+from url_category import URLCategory
+from url_data import URLData
 
 
 class TestRepositoryData:
@@ -390,9 +392,10 @@ class TestConvenienceFunctions:
             is_valid=True,
             unique_identifier="test/repo"
         )
-        
-        result = retrieve_data_for_url(url_data)
-        
+
+        retriever = DataRetriever()
+        result = retriever.retrieve_data(url_data)
+
         assert result.success == True
         assert result.platform == "github"
         mock_retrieve.assert_called_once_with(url_data)
@@ -409,9 +412,10 @@ class TestConvenienceFunctions:
             URLData("https://github.com/test1/repo1", URLCategory.GITHUB, "github.com", True),
             URLData("https://npmjs.com/package/test-package", URLCategory.NPM, "npmjs.com", True)
         ]
-        
-        results = retrieve_data_for_urls(url_data_list)
-        
+
+        retriever = DataRetriever()
+        results = retriever.retrieve_batch_data(url_data_list)
+
         assert len(results) == 2
         assert results[0].platform == "github"
         assert results[1].platform == "npm"
@@ -423,10 +427,9 @@ class TestIntegrationScenarios:
     
     def test_data_structure_compatibility(self):
         """Test that URL handler output is compatible with data retrieval input."""
-        from url_handler import handle_url
         
         # Process a URL
-        url_data = handle_url("https://github.com/microsoft/typescript")
+        url_data = URLHandler().handle_url("https://github.com/microsoft/typescript")
         
         # Verify it has the required fields for data retrieval
         assert hasattr(url_data, 'is_valid')
