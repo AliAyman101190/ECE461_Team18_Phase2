@@ -485,36 +485,3 @@ class DataRetriever:
         
         return results
 
-
-# # Convenience functions -> fuck convenience functions ... should be called inconvenience functions cuz they just make me have to read way more motherfucking lines of code trying to understand whatever bullshit Cursor came up with 
-# def retrieve_data_for_urls(url_data_list: List[URLData], github_token: Optional[str] = None) -> List[RepositoryData]:
-#     retriever = DataRetriever(github_token=github_token)
-#     return retriever.retrieve_batch_data(url_data_list)
-
-
-# def retrieve_data_for_url(url_data: URLData, github_token: Optional[str] = None) -> RepositoryData:
-#     retriever = DataRetriever(github_token=github_token)
-#     return retriever.retrieve_data(url_data)
-
-
-# if __name__ == "__main__":
-#     # Example usage
-#     from url_handler import handle_url
-    
-#     # Test with a GitHub repository
-#     github_url = "https://github.com/microsoft/typescript"
-#     url_data = handle_url(github_url)
-    
-#     if url_data.is_valid:
-#         print(f"Processing URL: {github_url}")
-#         print(f"Extracted identifier: {url_data.unique_identifier}")
-        
-#         repo_data = retrieve_data_for_url(url_data)
-        
-#         if repo_data.success:
-#             print(f"Repository: {repo_data.name}")
-#             print(f"Description: {repo_data.description}")
-#             print(f"Stars: {repo_data.stars}")
-#             print(f"Language: {repo_data.language}")
-#         else:
-#             print(f"Error: {repo_data.error_message}")
