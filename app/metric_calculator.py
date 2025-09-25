@@ -102,7 +102,7 @@ class MetricCalculator:
             results[f"{metric.name}_latency"] = latency
         
         # Finalize net score and latency
-        results["net_score"] = net_score 
+        results["net_score"] = round(net_score, 3) 
         results["net_score_latency"] = int((time.time() - start_time) * 1000)
         
         return results

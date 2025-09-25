@@ -304,10 +304,18 @@ class NPMAPIClient:
 
 class HuggingFaceAPIClient:
     def __init__(self, token: Optional[str] = None):
+        # Avoid printing the raw token to stdout/stderr. Log whether a token was
+        # provided (without revealing it) to help with debugging token-loading.
+        logger.debug("HuggingFaceAPIClient: HF token provided=%s", bool(token))
         self.base_url = "https://huggingface.co/api"
         self.session = requests.Session()
+        # Only set Authorization header when a non-empty token is provided.
+        # Passing an empty string or None previously resulted in an Authorization
+        # header like 'Bearer ' or 'Bearer None', which caused 401 Unauthorized
+        # responses from the Hugging Face API for otherwise-public resources.
+        if token:
+            self.session.headers.update({"Authorization": f"Bearer {token}"})
         self.session.headers.update({
-            "Authorization": f"Bearer {token}",
             "User-Agent": "ECE461-Package-Analyzer"
         })
     

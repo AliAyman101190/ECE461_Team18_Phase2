@@ -8,7 +8,8 @@ from datetime import datetime, timezone
 from typing import * 
 from metric import Metric
 from dotenv import load_dotenv
-load_dotenv()
+# Load .env and allow .env to override empty env vars set by the `run` script
+load_dotenv(override=True)
 
 os.makedirs('logs', exist_ok=True)
 LOG_FILE = os.path.join('logs', 'submetrics.log')
@@ -24,8 +25,9 @@ logger.propagate = False
 
 logger.info("submetrics initialized; logging to %s", LOG_FILE)
 
-# HF_TOKEN = os.environ['HF_TOKEN']
-GEN_AI_STUDIO_API_KEY = os.environ['GEN_AI_STUDIO_API_KEY']
+# Read Gen AI Studio API key safely (may be missing). Do not raise on missing key.
+GEN_AI_STUDIO_API_KEY = os.environ.get('GEN_AI_STUDIO_API_KEY')
+logger.debug("submetrics: GEN_AI_STUDIO_API_KEY present=%s", bool(GEN_AI_STUDIO_API_KEY))
 
 
 class SizeMetric(Metric):
@@ -233,9 +235,10 @@ class RampUpMetric(Metric):
     
     def _evaluate_popularity(self, model_info: Dict[str, Any]) -> float:
         """Evaluate based on downloads and likes"""
-        downloads_last_month = model_info.get("downloads_last_month", 0)
-        likes = model_info.get("likes", 0)
-        stars = model_info.get("stars", 0)
+        # Use safe defaults if fields are missing or None
+        downloads_last_month = model_info.get("downloads_last_month") or 0
+        likes = model_info.get("likes") or 0
+        stars = model_info.get("stars") or 0
 
         # Normalize scores
         download_score = min(1.0, downloads_last_month / 10000)  # Scale to 10k downloads
@@ -306,8 +309,14 @@ class BusFactorMetric(Metric):
     def _evaluate_contributors(self, model_info: Dict[str, Any]) -> float:
         """Evaluate based on number of contributors"""
         # This would ideally use git metadata, simplified for now
-        num_contributors = model_info.get("contributors_count", 0)
-        
+        num_contributors = model_info.get("contributors_count") or 0
+
+        # Ensure num_contributors is an int
+        try:
+            num_contributors = int(num_contributors)
+        except Exception:
+            num_contributors = 0
+
         if num_contributors >= 10:
             return 1.0
         elif num_contributors >= 6:
@@ -319,7 +328,7 @@ class BusFactorMetric(Metric):
     
     def _evaluate_activity(self, model_info: Dict[str, Any]) -> float:
         """Evaluate recent activity based on last modified date"""
-        last_modified = model_info.get("updated_at", None)
+        last_modified = model_info.get("lastModified")
         if not last_modified:
             return 0.2
         
@@ -382,8 +391,8 @@ class AvailableScoreMetric(Metric):
         if model_info.get("datasets"):
             score += 0.6
         
-        # Check README for dataset information
-        readme = model_info.get("readme", "").lower()
+        # Check README for dataset information (safe default)
+        readme = (model_info.get("readme") or "").lower()
         if any(term in readme for term in ["dataset", "training data", "trained on"]):
             score += 0.4
         
@@ -391,7 +400,7 @@ class AvailableScoreMetric(Metric):
     
     def _evaluate_code_availability(self, model_info: Dict[str, Any]) -> float:
         """Evaluate code availability"""
-        files = model_info.get("siblings", [])
+        files = model_info.get("siblings") or []
         if not files:
             return 0.0
         
@@ -440,7 +449,7 @@ class DatasetQualityMetric(Metric):
         # datasets = model_info.get("datasets", [])
         # if not datasets:
         #     return 0.2
-        homepage = model_info.get("homepage", "").lower()
+        homepage = (model_info.get("homepage") or "").lower()
         if not homepage:
             return 0.2
         
@@ -486,7 +495,7 @@ class CodeQualityMetric(Metric):
     
     def _evaluate_code_presence(self, model_info: Dict[str, Any]) -> float:
         """Basic evaluation of code presence and organization"""
-        files = model_info.get("siblings", [])
+        files = model_info.get("siblings") or []
         if not files:
             return 0.1
         
@@ -564,10 +573,12 @@ OUTPUT REQUIREMENTS:
         
     def _evaluate_performance_in_readme(self, readme: str) -> float:
         url = "https://genai.rcac.purdue.edu/api/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {GEN_AI_STUDIO_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        # Only include Authorization header when API key is present
+        headers = {"Content-Type": "application/json"}
+        if GEN_AI_STUDIO_API_KEY:
+            headers["Authorization"] = f"Bearer {GEN_AI_STUDIO_API_KEY}"
+        else:
+            logger.debug("Gen AI Studio API key not present; skipping authenticated header")
         body = {
             "model": "llama4:latest",
             "messages": [
@@ -576,8 +587,12 @@ OUTPUT REQUIREMENTS:
             ],
             "response_format": {"type": "text"},
         }
+        # If API key isn't present, we still can attempt the call but it will
+        # likely return 401; the surrounding code handles exceptions and will
+        # return 0.0 in that case. We log that the key is missing to aid
+        # diagnostics.
         try:
-            resp = requests.post(url, headers=headers, json=body)
+            resp = requests.post(url, headers=headers, json=body, timeout=15)
             resp.raise_for_status()
 
             if resp.status_code != 200:

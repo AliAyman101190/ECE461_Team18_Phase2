@@ -21,7 +21,9 @@ from url_data import URLData, RepositoryData # URL_DATA
 from data_retrieval import DataRetriever # DATA_RETRIEVER
 from metric_calculator import MetricCalculator # METRIC_CALCULATOR
 from dotenv import load_dotenv # .env file loading
-load_dotenv() 
+# Load .env and allow values in .env to override existing environment variables
+# (this is important because the `run` script may export empty defaults).
+load_dotenv(override=True)
 
 os.makedirs('logs', exist_ok=True)
 LOG_FILE = os.path.join('logs', 'cli_controller.log')
@@ -38,8 +40,8 @@ logger.propagate = False
 
 logger.info("cli_controller initialized; logging to %s", LOG_FILE)
 
-HF_TOKEN = os.environ['HF_TOKEN']
-GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
+HF_TOKEN = os.environ.get('HF_TOKEN')
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 
 
 class CLIController:
@@ -148,6 +150,7 @@ class CLIController:
 
             # call metric calculator - pass the merged dict directly (calculator expects a dict)
             metric_results = self.metric_calculator.calculate_all_metrics(merged, "MODEL")
+            metric_results['name'] = model_dict['name']
             return metric_results
 
         except Exception as e:
