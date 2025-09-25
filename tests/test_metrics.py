@@ -14,6 +14,7 @@ if app_dir not in sys.path:
     sys.path.insert(0, app_dir)
 
 from app.metric_calculator import MetricCalculator
+from app.metric import Metric
 from app.submetrics import *
 
 # Ensure logs directory exists
@@ -211,6 +212,26 @@ def test_metric_calculator_timeout_handling(monkeypatch):
     # net score present
     assert "net_score" in results
     logger.info('Finished test_metric_calculator_timeout_handling')
+
+
+def test_metric_base_methods_return_notimplemented():
+    # Create a concrete subclass that calls the base implementation
+    class DummyMetric(Metric):
+        def __init__(self):
+            super().__init__()
+            self.name = 'dummy_metric'
+
+        def calculate_metric(self, data: str):
+            # call base implementation which returns a NotImplementedError instance
+            return super().calculate_metric(data)
+
+        def calculate_latency(self):
+            return 0
+
+    dm = DummyMetric()
+    res = dm.calculate_metric('{}')
+    assert isinstance(res, NotImplementedError)
+    assert dm.calculate_latency() == 0
 
 
 if __name__ == '__main__':
