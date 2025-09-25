@@ -98,8 +98,10 @@ class CLIController:
             #     'GitPython'
             # ]
 
+            # Use the current Python executable to run pip to avoid relying on a 'pip'
+            # binary on PATH which may not exist in some environments.
             result = subprocess.run(
-                    ['pip', 'install', '-r', 'requirements.txt', '--user'],
+                    [sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt', '--user'],
                     capture_output=True,
                     text=True,
                     timeout=300 # 5 min timeout
@@ -285,9 +287,10 @@ class CLIController:
 
         try:
 
-            # test
+            # Use the current Python executable to run pytest so we don't depend on a
+            # 'python' binary on PATH. This ensures consistent interpreter usage.
             result = subprocess.run([
-                'python', '-m', 'pytest',
+                sys.executable, '-m', 'pytest',
                 '--cov=app',
                 '--cov-report=term-missing',
                 '--tb=short',
