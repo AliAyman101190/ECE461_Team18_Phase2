@@ -77,9 +77,9 @@ def check_github_token_validity():
         return False
 
 
-if not check_github_token_validity():
-    logger.error("Invalid GitHub Token passed. Exiting program...")
-    sys.exit(1)
+# Do not validate GitHub token at import time: testing environments import this
+# module and should not cause the process to exit during pytest collection.
+# Validation is performed at runtime inside CLIController.run() when appropriate.
 
 class CLIController:
     """
@@ -94,6 +94,17 @@ class CLIController:
         self.metric_calculator: MetricCalculator = MetricCalculator()
         self.data_retriever = DataRetriever(github_token=GITHUB_TOKEN, hf_token=HF_TOKEN)
         self.valid_url_categories = {URLCategory.GITHUB, URLCategory.NPM, URLCategory.HUGGINGFACE}
+
+    def _ensure_github_token(self) -> bool:
+        """
+        Ensure the GitHub token is present and valid. Returns True when valid.
+        This is a runtime check and should not call sys.exit so unit tests can
+        import the module without side effects.
+        """
+        if not check_github_token_validity():
+            logger.error("Invalid GitHub Token passed.")
+            return False
+        return True
 
     def parse_arguments(self) -> argparse.Namespace:
         """
@@ -356,8 +367,13 @@ class CLIController:
             if command == 'install':
                 return self.install_dependencies()
             elif command == 'test':
+                # Running tests does not need a GitHub token; don't validate here.
                 return self.run_tests()
             else:
+                # For regular processing we require a valid GitHub token.
+                if not self._ensure_github_token():
+                    print("Error: Invalid or missing GitHub token. Exiting.", file=sys.stderr)
+                    return 1
                 return self.process_urls(command)
         
         except KeyboardInterrupt:
