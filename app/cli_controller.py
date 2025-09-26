@@ -59,42 +59,6 @@ logger.info("cli_controller initialized; logging to %s", LOG_FILE)
 HF_TOKEN = os.environ.get('HF_TOKEN')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 
-def check_github_token_validity():
-    github_token = os.getenv("GITHUB_TOKEN")
-
-    if not github_token:
-        print("Error: GITHUB_TOKEN environment variable is not set.")
-        return False
-
-    # Choose a simple API endpoint that requires authentication, e.g., fetching user data
-    api_url = "https://api.github.com/user"
-    headers = {
-        "Authorization": f"Bearer {github_token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-
-    try:
-        response = requests.get(api_url, headers=headers)
-        response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
-
-        print("GitHub token is valid and has access to user data.")
-        return True
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 401:
-            print(f"Error: GitHub token is invalid or expired. Status code: {e.response.status_code}")
-        elif e.response.status_code == 403:
-            print(f"Error: GitHub token lacks required permissions. Status code: {e.response.status_code}")
-        else:
-            print(f"Error checking GitHub token: {e}")
-        return False
-    except requests.exceptions.RequestException as e:
-        print(f"Error connecting to GitHub API: {e}")
-        return False
-
-
-# Do not validate GitHub token at import time: testing environments import this
-# module and should not cause the process to exit during pytest collection.
-# Validation is performed at runtime inside CLIController.run() when appropriate.
 
 class CLIController:
     """
@@ -110,16 +74,16 @@ class CLIController:
         self.data_retriever = DataRetriever(github_token=GITHUB_TOKEN, hf_token=HF_TOKEN)
         self.valid_url_categories = {URLCategory.GITHUB, URLCategory.NPM, URLCategory.HUGGINGFACE}
 
-    def _ensure_github_token(self) -> bool:
-        """
-        Ensure the GitHub token is present and valid. Returns True when valid.
-        This is a runtime check and should not call sys.exit so unit tests can
-        import the module without side effects.
-        """
-        if not check_github_token_validity():
-            logger.error("Invalid GitHub Token passed.")
-            return False
-        return True
+    # def _ensure_github_token(self) -> bool:
+    #     """
+    #     Ensure the GitHub token is present and valid. Returns True when valid.
+    #     This is a runtime check and should not call sys.exit so unit tests can
+    #     import the module without side effects.
+    #     """
+    #     if not check_github_token_validity():
+    #         logger.error("Invalid GitHub Token passed.")
+    #         return False
+    #     return True
 
     def parse_arguments(self) -> argparse.Namespace:
         """
