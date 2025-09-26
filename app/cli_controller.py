@@ -54,7 +54,7 @@ def check_github_token_validity():
     # Choose a simple API endpoint that requires authentication, e.g., fetching user data
     api_url = "https://api.github.com/user"
     headers = {
-        "Authorization": f"token {github_token}",
+        "Authorization": f"Bearer {github_token}",
         "Accept": "application/vnd.github.v3+json"
     }
 
