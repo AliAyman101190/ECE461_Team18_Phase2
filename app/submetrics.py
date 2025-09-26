@@ -7,21 +7,34 @@ import logging
 from datetime import datetime, timezone
 from typing import * 
 from metric import Metric
-from dotenv import load_dotenv
-# Load .env and allow .env to override empty env vars set by the `run` script
-load_dotenv(override=True)
+try:
+    from dotenv import load_dotenv
+    # Load .env and allow .env to override empty env vars set by the `run` script
+    load_dotenv(override=True)
+except Exception:
+    # python-dotenv not installed; tests should still run without env overrides
+    pass
 
-os.makedirs('logs', exist_ok=True)
-LOG_FILE = os.path.join('logs', 'submetrics.log')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(LOG_FILE) for h in logger.handlers):
-    fh = logging.FileHandler(LOG_FILE, mode='w', encoding='utf-8')
-    fh.setLevel(logging.INFO)
+try:
+    os.makedirs('logs', exist_ok=True)
+    LOG_FILE = os.path.join('logs', 'submetrics.log')
+    if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(LOG_FILE) for h in logger.handlers):
+        fh = logging.FileHandler(LOG_FILE, mode='w', encoding='utf-8')
+        fh.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+except Exception:
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-logger.propagate = False
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.INFO)
+    sh.setFormatter(formatter)
+    if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+        logger.addHandler(sh)
+finally:
+    logger.propagate = False
 
 logger.info("submetrics initialized; logging to %s", LOG_FILE)
 

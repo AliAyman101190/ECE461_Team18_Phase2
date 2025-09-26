@@ -21,23 +21,38 @@ from url_category import URLCategory # URL_CATEGORY
 from url_data import URLData, RepositoryData # URL_DATA
 from data_retrieval import DataRetriever # DATA_RETRIEVER
 from metric_calculator import MetricCalculator # METRIC_CALCULATOR
-from dotenv import load_dotenv # .env file loading
-# Load .env and allow values in .env to override existing environment variables
-# (this is important because the `run` script may export empty defaults).
-load_dotenv(override=True)
+try:
+    from dotenv import load_dotenv # .env file loading
+    # Load .env and allow values in .env to override existing environment variables
+    # (this is important because the `run` script may export empty defaults).
+    load_dotenv(override=True)
+except Exception:
+    # If python-dotenv is not installed, proceed without loading .env
+    pass
 
-os.makedirs('logs', exist_ok=True)
-LOG_FILE = os.path.join('logs', 'cli_controller.log')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-# Ensure each module writes to its own file and doesn't propagate to root handlers
-if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(LOG_FILE) for h in logger.handlers):
-    fh = logging.FileHandler(LOG_FILE, mode='w', encoding='utf-8')
-    fh.setLevel(logging.INFO)
+try:
+    os.makedirs('logs', exist_ok=True)
+    LOG_FILE = os.path.join('logs', 'cli_controller.log')
+    # Ensure each module writes to its own file and doesn't propagate to root handlers
+    if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(LOG_FILE) for h in logger.handlers):
+        fh = logging.FileHandler(LOG_FILE, mode='w', encoding='utf-8')
+        fh.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+except Exception:
+    # If file logging is not possible (e.g., invalid path or permissions), fall back to stderr
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-logger.propagate = False
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.INFO)
+    sh.setFormatter(formatter)
+    # Avoid duplicate stream handlers
+    if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+        logger.addHandler(sh)
+finally:
+    logger.propagate = False
 
 logger.info("cli_controller initialized; logging to %s", LOG_FILE)
 
