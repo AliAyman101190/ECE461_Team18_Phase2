@@ -6,6 +6,7 @@ Handles command line interface and orchestrates application flow.
 import re # regex
 import sys # command line argument parsing
 import os # env var access
+import requests 
 import argparse # command-line parsing
 from datetime import datetime # timestamp handling
 import logging # logging system implementation
@@ -42,7 +43,42 @@ logger.info("cli_controller initialized; logging to %s", LOG_FILE)
 
 HF_TOKEN = os.environ.get('HF_TOKEN')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-if not GITHUB_TOKEN:
+
+def check_github_token_validity():
+    github_token = os.getenv("GITHUB_TOKEN")
+
+    if not github_token:
+        print("Error: GITHUB_TOKEN environment variable is not set.")
+        return False
+
+    # Choose a simple API endpoint that requires authentication, e.g., fetching user data
+    api_url = "https://api.github.com/user"
+    headers = {
+        "Authorization": f"token {github_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+    try:
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+
+        print("GitHub token is valid and has access to user data.")
+        return True
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            print(f"Error: GitHub token is invalid or expired. Status code: {e.response.status_code}")
+        elif e.response.status_code == 403:
+            print(f"Error: GitHub token lacks required permissions. Status code: {e.response.status_code}")
+        else:
+            print(f"Error checking GitHub token: {e}")
+        return False
+    except requests.exceptions.RequestException as e:
+        print(f"Error connecting to GitHub API: {e}")
+        return False
+
+
+if not check_github_token_validity():
+    logger.error("Invalid GitHub Token passed. Exiting program...")
     sys.exit(1)
 
 class CLIController:
