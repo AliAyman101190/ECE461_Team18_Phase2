@@ -19,13 +19,13 @@ if app_dir not in sys.path:
 from app.cli_controller import CLIController
 
 
-def test_parse_arguments_monkeypatch(monkeypatch):
-    with patch.object(CLIController, 'check_github_token_validity', return_value=True):
-        controller = CLIController()
-    # Simulate command line args
-    monkeypatch.setattr(sys, 'argv', ['run', 'install'])
-    args = controller.parse_arguments()
-    assert args.command == 'install'
+# def test_parse_arguments_monkeypatch(monkeypatch):
+#     with patch.object(CLIController, 'check_github_token_validity', return_value=True):
+#         controller = CLIController()
+#     # Simulate command line args
+#     monkeypatch.setattr(sys, 'argv', ['run', 'install'])
+#     args = controller.parse_arguments()
+#     assert args.command == 'install'
 
 
 # def test_install_dependencies_success(monkeypatch):

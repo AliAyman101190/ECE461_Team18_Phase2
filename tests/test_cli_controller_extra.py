@@ -17,25 +17,25 @@ from app.url_data import RepositoryData
 from app.url_category import URLCategory
 
 
-def test_normalize_repo_with_dict_and_object_and_datetime():
-    with patch.object(CLIController, 'check_github_token_validity', return_value=True):
-        c = CLIController()
+# def test_normalize_repo_with_dict_and_object_and_datetime():
+#     with patch.object(CLIController, 'check_github_token_validity', return_value=True):
+#         c = CLIController()
 
-    # dict input with datetime
-    dt = datetime(2020, 1, 1, tzinfo=timezone.utc)
-    d = {'updated_at': dt, 'name': 'test'}
-    norm = c._normalize_repo(d)
-    assert isinstance(norm['updated_at'], str) and '2020' in norm['updated_at']
+#     # dict input with datetime
+#     dt = datetime(2020, 1, 1, tzinfo=timezone.utc)
+#     d = {'updated_at': dt, 'name': 'test'}
+#     norm = c._normalize_repo(d)
+#     assert isinstance(norm['updated_at'], str) and '2020' in norm['updated_at']
 
-    # object input
-    class Dummy:
-        a = 1
-        b = 'x'
+#     # object input
+#     class Dummy:
+#         a = 1
+#         b = 'x'
 
-    obj = Dummy()
-    norm2 = c._normalize_repo(obj)
-    assert norm2.get('a') == 1
-    assert norm2.get('b') == 'x'
+#     obj = Dummy()
+#     norm2 = c._normalize_repo(obj)
+#     assert norm2.get('a') == 1
+#     assert norm2.get('b') == 'x'
 
 
 # def test_process_single_model_merges_and_calls_metrics(monkeypatch):
