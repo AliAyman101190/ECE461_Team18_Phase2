@@ -42,7 +42,8 @@ logger.info("cli_controller initialized; logging to %s", LOG_FILE)
 
 HF_TOKEN = os.environ.get('HF_TOKEN')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-
+if not GITHUB_TOKEN:
+    sys.exit(1)
 
 class CLIController:
     """
