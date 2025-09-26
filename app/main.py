@@ -3,6 +3,8 @@ import sys
 import os
 import argparse
 from pathlib import Path
+import logging
+import requests
 
 # Suppress noisy RequestsDependencyWarning emitted by system-installed requests
 # when urllib3/chardet versions are different than expected. Do this before
@@ -39,14 +41,16 @@ def _validate_log_path_from_env() -> None:
             env_dir = os.environ.get(key)
             break
 
-    # If a directory is specified, ensure it exists and is writable
+    # If a directory is specified, ensure it exists and is writable (create if possible)
     if env_dir is not None:
         try:
             if not str(env_dir).strip():
                 raise RuntimeError("log directory path is empty")
             dir_path = Path(env_dir)
-            if not dir_path.exists() or not dir_path.is_dir():
-                raise RuntimeError("log directory does not exist or is not a directory")
+            if not dir_path.exists():
+                raise RuntimeError("log directory does not exist")
+            if not dir_path.is_dir():
+                raise RuntimeError("log directory is not a directory")
             if not os.access(str(dir_path), os.W_OK):
                 raise RuntimeError("log directory is not writable")
         except Exception as e:
@@ -60,15 +64,49 @@ def _validate_log_path_from_env() -> None:
                 raise RuntimeError("log file path is empty")
             path_obj = Path(env_path)
             parent = path_obj.parent
-            if not parent.exists() or not parent.is_dir():
+            if not parent.exists():
                 raise RuntimeError("log file parent directory does not exist")
+            if not parent.is_dir():
+                raise RuntimeError("log file parent is not a directory")
             if not os.access(str(parent), os.W_OK):
                 raise RuntimeError("log file parent directory is not writable")
-            # Try opening the file for append to validate writability without creating parents
+            # Try opening the file for append to validate writability
             with open(path_obj, 'a', encoding='utf-8'):
                 pass
         except Exception as e:
             print(f"Error: Invalid log file path in environment: {env_path} ({e})", file=sys.stderr)
+            sys.exit(1)
+
+
+def _configure_logging_from_env() -> None:
+    """
+    Configure the root logger to write to LOG_FILE with verbosity level from LOG_LEVEL.
+    LOG_LEVEL: 0 -> silent, 1 -> INFO, 2 -> DEBUG. Default is 0 (silent).
+    """
+    log_file = os.environ.get('LOG_FILE') or os.environ.get('LOG_PATH') or os.environ.get('LOGFILE')
+    # Determine verbosity
+    try:
+        level_env = int(os.environ.get('LOG_LEVEL', '0'))
+    except Exception:
+        level_env = 0
+
+    if level_env <= 0:
+        level = logging.CRITICAL + 10  # effectively silent
+    elif level_env == 1:
+        level = logging.INFO
+    else:
+        level = logging.DEBUG
+
+    # Configure logging only if a log file is specified and validated
+    if log_file:
+        try:
+            logging.basicConfig(level=level, filename=str(log_file), filemode='a',
+                                format='%(asctime)s - %(levelname)s - %(message)s')
+            # Also set root logger level explicitly
+            logging.getLogger().setLevel(level)
+        except Exception:
+            # If logging configuration fails, treat as fatal
+            print(f"Error: could not configure logging to file: {log_file}", file=sys.stderr)
             sys.exit(1)
 
 
@@ -96,10 +134,23 @@ def _validate_github_token_if_required(command: str) -> None:
         print("Error: Invalid or missing GITHUB_TOKEN in environment.", file=sys.stderr)
         sys.exit(1)
 
+    # Perform a lightweight validation against GitHub API; tests may mock requests.get
+    try:
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+        resp = requests.get('https://api.github.com/user', headers=headers, timeout=5)
+        if resp.status_code != 200:
+            print(f"Error: GitHub token invalid or lacks permissions. Status code: {resp.status_code}", file=sys.stderr)
+            sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        print(f"Error: could not validate GitHub token: {e}", file=sys.stderr)
+        sys.exit(1)
+
 
 def main() -> None:
     # Preflight env validation before importing the rest of the application
     _validate_log_path_from_env()
+    # Configure logging per environment after validating the path
+    _configure_logging_from_env()
     command = _parse_commandline_for_preflight(sys.argv)
     _validate_github_token_if_required(command)
 

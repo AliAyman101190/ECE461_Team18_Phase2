@@ -15,13 +15,16 @@ def test_main_calls_cli_controller_run(monkeypatch):
 
     fake_controller = MagicMock()
     fake_controller.run.return_value = 0
-
-    with patch('app.main.CLIController', return_value=fake_controller):
-        # call main
-        try:
-            main_mod.main()
-        except SystemExit:
-            # main calls sys.exit; ignore in test
-            pass
+    # Ensure environment has a github token and mock validation call
+    monkeypatch.setenv('GITHUB_TOKEN', 'fake-token')
+    # Patch requests.get used during token validation to simulate a 200 OK
+    with patch('app.main.requests.get', return_value=MagicMock(status_code=200)):
+        with patch('app.main.CLIController', return_value=fake_controller):
+            # call main
+            try:
+                main_mod.main()
+            except SystemExit:
+                # main calls sys.exit; ignore in test
+                pass
 
     fake_controller.run.assert_called()
