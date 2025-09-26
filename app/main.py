@@ -98,7 +98,7 @@ def main() -> None:
     global CLIController  # patched by tests
     if CLIController is None:
         # Import lazily after preflight checks
-        from app.cli_controller import CLIController as _RealCLIController
+        from cli_controller import CLIController as _RealCLIController
         CLIController = _RealCLIController
 
     controller = CLIController()
