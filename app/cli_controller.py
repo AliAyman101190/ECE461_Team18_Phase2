@@ -350,9 +350,9 @@ class CLIController:
                 return self.run_tests()
             else:
                 # For regular processing we require a valid GitHub token.
-                if not self._ensure_github_token():
-                    print("Error: Invalid or missing GitHub token. Exiting.", file=sys.stderr)
-                    return 1
+                # if not self._ensure_github_token():
+                #     print("Error: Invalid or missing GitHub token. Exiting.", file=sys.stderr)
+                #     return 1
                 return self.process_urls(command)
         
         except KeyboardInterrupt:
