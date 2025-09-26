@@ -1,6 +1,7 @@
 import os
 import sys
 from types import SimpleNamespace
+import pytest
 from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
@@ -17,7 +18,8 @@ from app.url_category import URLCategory
 
 
 def test_normalize_repo_with_dict_and_object_and_datetime():
-    c = CLIController()
+    with patch.object(CLIController, 'check_github_token_validity', return_value=True):
+        c = CLIController()
 
     # dict input with datetime
     dt = datetime(2020, 1, 1, tzinfo=timezone.utc)
@@ -37,7 +39,8 @@ def test_normalize_repo_with_dict_and_object_and_datetime():
 
 
 def test_process_single_model_merges_and_calls_metrics(monkeypatch):
-    c = CLIController()
+    with patch.object(CLIController, 'check_github_token_validity', return_value=True):
+        c = CLIController()
 
     # Prepare fake RepositoryData returns for code, dataset, model
     repo_code = RepositoryData(platform='github', identifier='o/c', name='code', success=True)
@@ -70,7 +73,8 @@ def test_process_single_model_merges_and_calls_metrics(monkeypatch):
 
 
 def test_process_urls_reads_and_prints(monkeypatch, capsys):
-    c = CLIController()
+    with patch.object(CLIController, 'check_github_token_validity', return_value=True):
+        c = CLIController()
     # Provide a fake list of url dicts
     fake_list = [
         {'code': 'c1', 'dataset': 'd1', 'model': 'm1'},
@@ -97,6 +101,32 @@ def test_process_urls_reads_and_prints(monkeypatch, capsys):
     assert rc == 0
     # Ensure URL handler was invoked for at least one of the url fields
     assert handle_mock.called
+
+
+def test_run_requires_valid_github_token_app_path(monkeypatch):
+    with patch.object(CLIController, 'check_github_token_validity', return_value=True):
+        c = CLIController()
+    # Simulate CLI args for processing
+    monkeypatch.setattr(c, 'parse_arguments', lambda: SimpleNamespace(command='somefile.txt'))
+
+    # Patch the CLIController instance method to return True
+    with patch.object(CLIController, 'check_github_token_validity', return_value=True):
+        called = {}
+        def fake_process(p):
+            called['ok'] = True
+            return 0
+        monkeypatch.setattr(c, 'process_urls', fake_process)
+        rc = c.run()
+        assert rc == 0
+        assert called.get('ok', False) is True
+
+
+def test_run_rejects_invalid_github_token_app_path(monkeypatch, capsys):
+    monkeypatch.setattr(CLIController, 'parse_arguments', lambda self: SimpleNamespace(command='somefile.txt'))
+    with patch.object(CLIController, 'check_github_token_validity', return_value=False):
+        with pytest.raises(SystemExit):
+            # constructing the controller should exit when the token is invalid
+            CLIController()
 
 
 # def test_run_dispatch(monkeypatch):
