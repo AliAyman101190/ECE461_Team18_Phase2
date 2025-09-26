@@ -60,19 +60,52 @@ def _validate_log_path_from_env() -> None:
     # If a file path is specified, ensure parent exists and is writable, and file is creatable/appended
     if env_path is not None:
         try:
-            if not str(env_path).strip():
+            raw = str(env_path)
+            if not raw.strip():
                 raise RuntimeError("log file path is empty")
-            path_obj = Path(env_path)
+
+            # Expand user and environment variables
+            expanded = os.path.expanduser(os.path.expandvars(raw))
+            path_obj = Path(expanded)
+
+            # If the provided path ends with a path separator, treat it as invalid (directory-like)
+            if raw.endswith(os.sep) or raw.endswith('/') or raw.endswith('\\'):
+                raise RuntimeError("log file path appears to be a directory")
+
+            # If path exists and is a directory (or symlink to a directory), that's invalid
+            if path_obj.exists():
+                # Resolve symlink target if necessary
+                try:
+                    resolved = path_obj.resolve()
+                except Exception:
+                    resolved = path_obj
+                if resolved.is_dir():
+                    raise RuntimeError("log file path points to an existing directory")
+
             parent = path_obj.parent
+
+            # Parent directory must exist and be a directory
             if not parent.exists():
                 raise RuntimeError("log file parent directory does not exist")
             if not parent.is_dir():
                 raise RuntimeError("log file parent is not a directory")
+
+            # Parent directory must be writable
             if not os.access(str(parent), os.W_OK):
                 raise RuntimeError("log file parent directory is not writable")
+
+            # If the file exists, ensure it's writable (and not a directory)
+            if path_obj.exists():
+                if not os.access(str(path_obj), os.W_OK):
+                    raise RuntimeError("log file exists but is not writable")
+
             # Try opening the file for append to validate writability
-            with open(path_obj, 'a', encoding='utf-8'):
-                pass
+            try:
+                with open(path_obj, 'a', encoding='utf-8'):
+                    pass
+            except Exception as e:
+                raise RuntimeError(f"cannot open log file for append: {e}")
+
         except Exception as e:
             print(f"Error: Invalid log file path in environment: {env_path} ({e})", file=sys.stderr)
             sys.exit(1)
