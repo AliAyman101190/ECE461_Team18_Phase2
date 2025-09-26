@@ -21,23 +21,29 @@ def _validate_log_path_from_env() -> None:
     writable (create parent directories if possible). Exit with code 1 on error.
     Recognized env vars: LOG_FILE, LOG_PATH.
     """
-    # Support multiple common env var names
-    candidates = [
-        os.environ.get('LOG_FILE'),
-        os.environ.get('LOG_PATH'),
-        os.environ.get('LOGFILE'),
-        os.environ.get('LOGFILE_PATH'),
-    ]
-    dir_candidates = [
-        os.environ.get('LOG_DIR'),
-        os.environ.get('LOG_DIRECTORY'),
-    ]
-    env_path = next((p for p in candidates if p), None)
-    env_dir = next((d for d in dir_candidates if d), None)
+    # Support multiple common env var names. Treat empty strings as INVALID.
+    file_keys = ['LOG_FILE', 'LOG_PATH', 'LOGFILE', 'LOGFILE_PATH']
+    dir_keys = ['LOG_DIR', 'LOG_DIRECTORY']
+    env_path = None
+    env_dir = None
+
+    # Capture the first explicitly provided file path env var (even if empty)
+    for key in file_keys:
+        if key in os.environ:
+            env_path = os.environ.get(key)
+            break
+
+    # Capture the first explicitly provided directory env var (even if empty)
+    for key in dir_keys:
+        if key in os.environ:
+            env_dir = os.environ.get(key)
+            break
 
     # If a directory is specified, ensure it exists and is writable
-    if env_dir:
+    if env_dir is not None:
         try:
+            if not str(env_dir).strip():
+                raise RuntimeError("log directory path is empty")
             dir_path = Path(env_dir)
             if not dir_path.exists() or not dir_path.is_dir():
                 raise RuntimeError("log directory does not exist or is not a directory")
@@ -48,8 +54,10 @@ def _validate_log_path_from_env() -> None:
             sys.exit(1)
 
     # If a file path is specified, ensure parent exists and is writable, and file is creatable/appended
-    if env_path:
+    if env_path is not None:
         try:
+            if not str(env_path).strip():
+                raise RuntimeError("log file path is empty")
             path_obj = Path(env_path)
             parent = path_obj.parent
             if not parent.exists() or not parent.is_dir():
