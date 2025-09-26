@@ -73,8 +73,8 @@ class CLIController:
         self.metric_calculator: MetricCalculator = MetricCalculator()
         self.data_retriever = DataRetriever(github_token=GITHUB_TOKEN, hf_token=HF_TOKEN)
         self.valid_url_categories = {URLCategory.GITHUB, URLCategory.NPM, URLCategory.HUGGINGFACE}
-        if not self.check_github_token_validity():
-            sys.exit(1)
+        # if not self.check_github_token_validity():
+        #     sys.exit(1)
 
     # def _ensure_github_token(self) -> bool:
     #     """
@@ -366,35 +366,35 @@ class CLIController:
             return 1
         
 
-    def check_github_token_validity(self):
-        github_token = os.getenv("GITHUB_TOKEN")
+    # def check_github_token_validity(self):
+    #     github_token = os.getenv("GITHUB_TOKEN")
 
-        if not github_token:
-            print("Error: GITHUB_TOKEN environment variable is not set.")
-            return False
+    #     if not github_token:
+    #         print("Error: GITHUB_TOKEN environment variable is not set.")
+    #         return False
 
-        # Choose a simple API endpoint that requires authentication, e.g., fetching user data
-        api_url = "https://api.github.com/user"
-        headers = {
-            "Authorization": f"token {github_token}",
-            "Accept": "application/vnd.github.v3+json"
-        }
+    #     # Choose a simple API endpoint that requires authentication, e.g., fetching user data
+    #     api_url = "https://api.github.com/user"
+    #     headers = {
+    #         "Authorization": f"token {github_token}",
+    #         "Accept": "application/vnd.github.v3+json"
+    #     }
 
-        try:
-            response = requests.get(api_url, headers=headers)
-            response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+    #     try:
+    #         response = requests.get(api_url, headers=headers)
+    #         response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
 
-            print("GitHub token is valid and has access to user data.")
-            print(response.status_code)
-            return True
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 401:
-                print(f"Error: GitHub token is invalid or expired. Status code: {e.response.status_code}")
-            elif e.response.status_code == 403:
-                print(f"Error: GitHub token lacks required permissions. Status code: {e.response.status_code}")
-            else:
-                print(f"Error checking GitHub token: {e}")
-            return False
-        except requests.exceptions.RequestException as e:
-            print(f"Error connecting to GitHub API: {e}")
-            return False
+    #         print("GitHub token is valid and has access to user data.")
+    #         print(response.status_code)
+    #         return True
+    #     except requests.exceptions.HTTPError as e:
+    #         if e.response.status_code == 401:
+    #             print(f"Error: GitHub token is invalid or expired. Status code: {e.response.status_code}")
+    #         elif e.response.status_code == 403:
+    #             print(f"Error: GitHub token lacks required permissions. Status code: {e.response.status_code}")
+    #         else:
+    #             print(f"Error checking GitHub token: {e}")
+    #         return False
+    #     except requests.exceptions.RequestException as e:
+    #         print(f"Error connecting to GitHub API: {e}")
+    #         return False
