@@ -104,6 +104,13 @@ def _configure_logging_from_env() -> None:
                                 format='%(asctime)s - %(levelname)s - %(message)s')
             # Also set root logger level explicitly
             logging.getLogger().setLevel(level)
+            # Extra verification: explicitly open the file for append to ensure
+            # the path is writable and points to a file (not a directory).
+            try:
+                with open(str(log_file), 'a', encoding='utf-8'):
+                    pass
+            except Exception:
+                raise
         except Exception:
             # If logging configuration fails, treat as fatal
             print(f"Error: could not configure logging to file: {log_file}", file=sys.stderr)
