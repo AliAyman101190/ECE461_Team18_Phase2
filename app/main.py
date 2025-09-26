@@ -99,13 +99,6 @@ def _validate_log_path_from_env() -> None:
                 if not os.access(str(path_obj), os.W_OK):
                     raise RuntimeError("log file exists but is not writable")
 
-            # Try opening the file for append to validate writability
-            try:
-                with open(path_obj, 'a', encoding='utf-8'):
-                    pass
-            except Exception as e:
-                raise RuntimeError(f"cannot open log file for append: {e}")
-
         except Exception as e:
             print(f"Error: Invalid log file path in environment: {env_path} ({e})", file=sys.stderr)
             sys.exit(1)
@@ -137,13 +130,6 @@ def _configure_logging_from_env() -> None:
                                 format='%(asctime)s - %(levelname)s - %(message)s')
             # Also set root logger level explicitly
             logging.getLogger().setLevel(level)
-            # Extra verification: explicitly open the file for append to ensure
-            # the path is writable and points to a file (not a directory).
-            try:
-                with open(str(log_file), 'a', encoding='utf-8'):
-                    pass
-            except Exception:
-                raise
         except Exception:
             # If logging configuration fails, treat as fatal
             print(f"Error: could not configure logging to file: {log_file}", file=sys.stderr)
