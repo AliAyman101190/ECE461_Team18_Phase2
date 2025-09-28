@@ -285,17 +285,17 @@ class BusFactorMetric(Metric):
         try:
             score = 0.0
             
-            # Organization vs individual author (40% of score)
+            # Organization vs individual author (60% of score)
             org_score = self._evaluate_organization(model_info)
-            score += org_score * 0.4
+            score += org_score * 0.6
             
             # Number of collaborators/contributors (30% of score)
             contrib_score = self._evaluate_contributors(model_info)
             score += contrib_score * 0.3
             
-            # Activity and maintenance (30% of score)
+            # Activity and maintenance (10% of score)
             activity_score = self._evaluate_activity(model_info)
-            score += activity_score * 0.3
+            score += activity_score * 0.1
             
             self._latency = int((time.time() - start_time) * 1000)
             return min(1.0, score)
