@@ -6,7 +6,7 @@ Handles command line interface and orchestrates application flow.
 import re # regex
 import sys # command line argument parsing
 import os # env var access
-# import requests 
+import requests 
 import argparse # command-line parsing
 from datetime import datetime # timestamp handling
 import logging # logging system implementation
@@ -22,7 +22,7 @@ from url_data import URLData, RepositoryData # URL_DATA
 from data_retrieval import DataRetriever # DATA_RETRIEVER
 from metric_calculator import MetricCalculator # METRIC_CALCULATOR
 try:
-    from dotenv import load_dotenv  # pyright: ignore[reportMissingImports]
+    from dotenv import load_dotenv # .env file loading
     # Load .env and allow values in .env to override existing environment variables
     # (this is important because the `run` script may export empty defaults).
     load_dotenv(override=True)
