@@ -93,7 +93,45 @@ class SizeMetric(Metric):
         elif "model_size" in model_info:
             return float(model_info["model_size"])
         elif "safetensors" in model_info:
-            return sum(float(f.get("size", 0)) for f in model_info["safetensors"]) / (1024**3)
+            try:
+                st = model_info["safetensors"]
+                # HF can return a dict with a 'total' size or a list of files
+                if isinstance(st, dict):
+                    total_bytes = 0.0
+                    if "total" in st:
+                        total_bytes = float(st.get("total") or 0)
+                    elif "size" in st:
+                        total_bytes = float(st.get("size") or 0)
+                    return float(total_bytes) / (1024**3)
+                elif isinstance(st, list):
+                    total_bytes = 0.0
+                    for f in st:
+                        try:
+                            total_bytes += float((f or {}).get("size", 0) or 0)
+                        except Exception:
+                            continue
+                    return float(total_bytes) / (1024**3)
+            except Exception:
+                pass
+        # As a fallback, try summing model weight files from siblings if sizes are present
+        try:
+            siblings = model_info.get("siblings") or []
+            if isinstance(siblings, list) and siblings:
+                model_file_indicators = [
+                    ".safetensors", "pytorch_model.bin", "tf_model.h5", "model.onnx",
+                ]
+                total_bytes = 0.0
+                for file_info in siblings:
+                    name = str((file_info or {}).get("rfilename") or (file_info or {}).get("filename") or (file_info or {}).get("path") or "").lower()
+                    if any(ind in name for ind in model_file_indicators):
+                        try:
+                            total_bytes += float((file_info or {}).get("size", 0) or 0)
+                        except Exception:
+                            continue
+                if total_bytes > 0:
+                    return float(total_bytes) / (1024**3)
+        except Exception:
+            pass
         else:
             # Default assumption for unknown size
             return 0.6
