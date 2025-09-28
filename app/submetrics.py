@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import * 
 from metric import Metric
 try:
-    from dotenv import load_dotenv
+    from dotenv import load_dotenv # pyright: ignore[reportMissingImports]
     # Load .env and allow .env to override empty env vars set by the `run` script
     load_dotenv(override=True)
 except Exception:
@@ -150,13 +150,19 @@ class LicenseMetric(Metric):
             for tag in model_info["tags"]:
                 if "license:" in str(tag).lower():
                     return str(tag).lower().replace("license:", "").strip()
+
+        # add logic to check model_info['readme] for a line with license: {license} in it
+        if "readme" in model_info and model_info["readme"]:
+            for line in model_info["readme"].split("\n"):
+                if "license:" in line.lower():
+                    return line.lower().replace("license:", "").strip()
         
         return ""
     
     def _score_license(self, license_text: str) -> float:
         """Score license based on compatibility and clarity"""
         if not license_text:
-            return 0.1  # No license information
+            return 0.0  # No license information
         
         license_lower = license_text.lower()
         
@@ -170,8 +176,8 @@ class LicenseMetric(Metric):
             if problematic in license_lower:
                 return 0.4  # Low score for incompatible licenses
         
-        # Unknown license but present
-        return 0.6
+        # Unknown license means most likely no license
+        return 0.0
     
     def calculate_latency(self) -> int:
         return getattr(self, '_latency', 0)

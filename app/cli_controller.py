@@ -6,14 +6,11 @@ Handles command line interface and orchestrates application flow.
 import re # regex
 import sys # command line argument parsing
 import os # env var access
-import requests 
 import argparse # command-line parsing
 from datetime import datetime # timestamp handling
 import logging # logging system implementation
 import subprocess # pip install and pytest commands
-import concurrent.futures # parallel metric calc
 import json # output model scores
-import time # timing measurements for latency
 from pathlib import Path # filepath handling
 from typing import List, Dict, Any, Optional # type annotations
 from url_handler import URLHandler # URL_HANDLER
@@ -22,7 +19,7 @@ from url_data import URLData, RepositoryData # URL_DATA
 from data_retrieval import DataRetriever # DATA_RETRIEVER
 from metric_calculator import MetricCalculator # METRIC_CALCULATOR
 try:
-    from dotenv import load_dotenv # .env file loading
+    from dotenv import load_dotenv # pyright: ignore[reportMissingImports]
     # Load .env and allow values in .env to override existing environment variables
     # (this is important because the `run` script may export empty defaults).
     load_dotenv(override=True)
@@ -247,8 +244,10 @@ class CLIController:
             for obj in valid_objs:
                 result = self.process_single_model(obj) # TODO: IMPLEMENT THIS METHOD 
                 if result:
-                    # output as NDJSON
-                    print(json.dumps(result)) # probably need to format output better, but should work at least
+                    # # write output to NDJSON file for debugging purposes
+                    # with open('output.ndjson', 'w') as f:
+                    #     f.write(json.dumps(result) + '\n')
+                    print(json.dumps(result))
                     sys.stdout.flush()
 
             return 0
@@ -351,10 +350,6 @@ class CLIController:
                 # Running tests does not need a GitHub token; don't validate here.
                 return self.run_tests()
             else:
-                # For regular processing we require a valid GitHub token.
-                # if not self._ensure_github_token():
-                #     print("Error: Invalid or missing GitHub token. Exiting.", file=sys.stderr)
-                #     return 1
                 return self.process_urls(command)
         
         except KeyboardInterrupt:

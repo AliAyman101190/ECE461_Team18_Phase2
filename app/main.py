@@ -5,6 +5,9 @@ import argparse
 from pathlib import Path
 import logging
 import requests
+from dotenv import load_dotenv  # pyright: ignore[reportMissingImports]
+# Load .env from the app directory since main.py is run from project root
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'), override=True) 
 
 # Suppress noisy RequestsDependencyWarning emitted by system-installed requests
 # when urllib3/chardet versions are different than expected. Do this before
