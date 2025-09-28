@@ -293,14 +293,11 @@ class RampUpMetric(Metric):
         """Evaluate based on downloads and likes"""
         # Use safe defaults if fields are missing or None
         downloads_last_month = model_info.get("downloads_last_month") or 0
-        # Fallback to total downloads if last_month not available
-        if not downloads_last_month:
-            downloads_last_month = model_info.get("downloads") or 0
         likes = model_info.get("likes") or 0
         stars = model_info.get("stars") or 0
 
         # Normalize scores
-        download_score = min(1.0, float(downloads_last_month) / 10000.0)  # Scale to 10k downloads
+        download_score = min(1.0, downloads_last_month / 10000)  # Scale to 10k downloads
         like_score = min(1.0, likes / 100)  # Scale to 100 likes
         stars_score = min(1.0, stars / 100)  # Scale to 100 stars
 
@@ -541,53 +538,25 @@ class DatasetQualityMetric(Metric):
             return 0.0
     
     def _evaluate_dataset_reputation(self, model_info: Dict[str, Any]) -> float:
-        """Evaluate dataset quality using multiple signals: datasets, tags, homepage, README."""
-        score = 0.0
-
-        # Primary: explicit datasets list
-        datasets = model_info.get("datasets") or []
-        datasets_lower = [str(d).lower() for d in datasets] if isinstance(datasets, list) else []
-
-        # Secondary: tags that may include dataset names
-        tags = model_info.get("tags") or []
-        tags_lower = [str(t).lower() for t in tags if t]
-
-        # Tertiary: homepage URL and README text
+        """Evaluate based on known high-quality datasets"""
+        # datasets = model_info.get("datasets", [])
+        # if not datasets:
+        #     return 0.2
         homepage = (model_info.get("homepage") or "").lower()
-        readme = (model_info.get("readme") or "").lower()
-
-        high_quality_datasets = {
+        if not homepage:
+            return 0.2
+        
+        high_quality_datasets = [
             "common_voice", "librispeech", "imagenet", "coco", "squad",
-            "glue", "superglue", "wikitext", "bookcorpus", "openwebtext", "arxiv",
-            "mnist", "cifar", "cifar10", "cifar-10", "cifar100", "cifar-100"
-        }
-
-        # Credit known datasets from explicit list most heavily
-        if any(ds in high_quality_datasets for ds in datasets_lower):
-            score += 0.7
-
-        # Tags and homepage/README mentions add confidence
-        if any(ds in (homepage + " " + readme) for ds in high_quality_datasets):
-            score += 0.2
-
-        # General dataset documentation in README
-        dataset_terms = [
-            "dataset", "training data", "trained on", "corpus", "data",
-            "pretraining", "fine-tuned", "benchmark"
+            "glue", "superglue", "wikitext", "bookcorpus", "openwebtext", "arxiv"
         ]
-        if any(term in readme for term in dataset_terms):
-            score += 0.2
-
-        # If there is an explicit datasets list but not in our curated set, still give moderate credit
-        if score == 0.0 and datasets_lower:
-            score = 0.5
-
-        # If nothing detected but there are related tags, give small baseline
-        if score == 0.0 and tags_lower:
-            score = 0.2
-
-        # Ensure non-negative and within [0, 1]
-        return min(1.0, max(0.0, score))
+        
+        for dataset in high_quality_datasets:
+            if dataset in homepage:
+                return 0.9
+        
+        # Unknown datasets get moderate score
+        return 0.5
     
     def calculate_latency(self) -> int:
         return getattr(self, '_latency', 0)
@@ -783,34 +752,6 @@ OUTPUT REQUIREMENTS:
                 return 0.0
         except Exception as e:
             logger.error(f"Error calling Gen AI Studio API: {e}")
-            # fall through to local heuristic
-
-        # Local heuristic fallback when API is unavailable or parsing failed
-        try:
-            text = (readme or "").lower()
-            if not text:
-                return 0.0
-
-            # Look for explicit percentages like "85%"
-            percent_match = re.search(r"(\d{1,3}(?:\.\d+)?)\s*%", text)
-            if percent_match:
-                return clamp(float(percent_match.group(1)) / 100.0, 0.0, 1.0)
-
-            # Look for numbers between 0 and 1 near performance keywords
-            keywords = [
-                "accuracy", "f1", "bleu", "rouge", "exact match", "top-1", "top1",
-                "top-5", "top5", "wer", "cer", "auc", "auroc", "perplexity"
-            ]
-            number_match = re.search(r"(0?\.\d{1,3}|1(?:\.0+)?)", text)
-            if number_match and any(k in text for k in keywords):
-                return clamp(float(number_match.group(1)), 0.0, 1.0)
-
-            # If benchmarks are mentioned but no numbers, give small baseline
-            if any(k in text for k in ["benchmark", "evaluation", "results", "performance"]):
-                return 0.3
-
-            return 0.0
-        except Exception:
             return 0.0
 
     
