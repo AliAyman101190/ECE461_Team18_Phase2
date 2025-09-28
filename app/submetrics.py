@@ -415,7 +415,7 @@ class AvailableScoreMetric(Metric):
         if datasets:
             score += 0.6
         
-        # Check README for dataset information (safe default)
+        # Check README for dataset information
         readme = (model_info.get("readme") or "").lower()
         dataset_terms = ["dataset", "training data", "trained on", "corpus", "data", "pretraining", "fine-tuned", "benchmark"]
         if any(term in readme for term in dataset_terms):
@@ -443,7 +443,7 @@ class AvailableScoreMetric(Metric):
         
         # Check for actual code files
         if files:
-            code_indicators = [".py", ".ipynb", ".js", ".ts", ".r", "train", "eval", "inference", "example", "demo", "config"]
+            code_indicators = [".py", ".ipynb", ".js", ".ts", ".r", "train", "eval", "inference", "example", "demo", "config", ".json", ".yaml", ".yml", ".csv", ".txt", ".jsonl", ".jsonl.gz", ".jsonl.bz2", ".jsonl.xz", ".jsonl.zst", ".jsonl.lz4", ".jsonl.snappy", ".jsonl.gzip", ".jsonl.bzip2", ".jsonl.xz", ".jsonl.zst", ".jsonl.lz4", ".jsonl.snappy", ".jsonl.gzip", ".jsonl.bzip2", ".jsonl.xz", ".mlmodel"]
             
             for file_info in files:
                 filename = file_info.get("rfilename", "").lower()
