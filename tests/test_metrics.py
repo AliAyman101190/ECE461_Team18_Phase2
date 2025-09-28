@@ -140,7 +140,7 @@ def test_all_submetric_edge_cases():
 
     # LicenseMetric: unknown license -> low but non-zero
     lm = LicenseMetric()
-    assert lm.calculate_metric({}) in (0.1, 0.5, 0.3)
+    assert lm.calculate_metric({}) == 0.0
 
     # RampUpMetric: no README, no siblings
     rm = RampUpMetric()

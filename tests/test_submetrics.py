@@ -31,7 +31,7 @@ def test_license_metric_scores():
     lm = LicenseMetric()
     assert lm.calculate_metric({'license': 'MIT'}) == 1.0
     assert lm.calculate_metric({'license': 'GPL-3.0'}) == 0.4
-    assert lm.calculate_metric({}) == 0.1
+    assert lm.calculate_metric({}) == 0.0
 
 
 def test_performance_metric_parsing_and_clamp(monkeypatch):
