@@ -115,6 +115,16 @@ def _configure_logging_from_env() -> None:
         # If logging configuration fails, treat as fatal
         print(f"Error: could not configure logging to file: {log_file}", file=sys.stderr)
         sys.exit(1)
+    # Emit a minimal confirmation message at the configured verbosity so
+    # downstream checks can verify that logging is active at this level.
+    try:
+        if level_env >= 2:
+            logging.debug("Logging configured at DEBUG (LOG_LEVEL=2)")
+        if level_env >= 1:
+            logging.info("Logging configured at INFO (LOG_LEVEL=1)")
+    except Exception:
+        # Don't fail the program if writing the confirmation log line fails
+        pass
 
 
 def _parse_commandline_for_preflight(argv: list[str]) -> str:
