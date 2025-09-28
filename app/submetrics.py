@@ -745,36 +745,55 @@ OUTPUT REQUIREMENTS:
                 score: float = float(match.group(1)) if match else 0.0 
 
                 logger.info(f"Successfully received performance score: {score}")
-                return clamp(score, 0.0, 1.0)
+                # Also compute a conservative README estimate and take the max
+                estimate = self._estimate_readme_score(readme)
+                return clamp(max(score, estimate), 0.0, 1.0)
             
             except Exception as e:
                 logger.error(f"Could not extract score from Gen AI Studio response: {e}; resp_json: {resp_json}")
-                # Fallback: simple heuristic scan of README for metrics if API parse fails
-                # Look for patterns like 'accuracy 0.85', 'f1 0.90', etc.
-                try:
-                    text = readme.lower() if isinstance(readme, str) else ""
-                    # common metric keywords
-                    keywords = ["accuracy", "acc", "f1", "f-1", "f1-score", "bleu", "rouge", "exact match", "em"]
-                    numbers = re.findall(r"(0?\.\d{2,}|\b\d{2,3}\b)", text)
-                    has_keyword = any(k in text for k in keywords)
-                    if has_keyword and numbers:
-                        # Map plausible percentage (e.g., 85) to 0.85, clamp to [0,1]
-                        vals: List[float] = []
-                        for n in numbers:
-                            try:
-                                v = float(n)
-                                if v > 1.0 and v <= 100.0:
-                                    v = v / 100.0
-                                vals.append(v)
-                            except Exception:
-                                continue
-                        if vals:
-                            return clamp(sum(vals)/len(vals), 0.0, 1.0)
-                except Exception:
-                    pass
+                # Fallback: conservative README estimate when API parse fails
+                est = self._estimate_readme_score(readme)
+                if est > 0.0:
+                    return clamp(est, 0.0, 1.0)
                 return 0.0
         except Exception as e:
             logger.error(f"Error calling Gen AI Studio API: {e}")
+            return 0.0
+
+    def _estimate_readme_score(self, readme: str) -> float:
+        """Conservative estimate: detect presence of performance metrics in README.
+        Returns 0.0-1.0. Kept conservative to not over-score.
+        """
+        try:
+            text = (readme or "").lower()
+            if not text:
+                return 0.0
+            # Look for metric keywords and numeric values that look like scores
+            keywords = ["accuracy", "acc", "f1", "f-1", "f1-score", "bleu", "rouge", "exact match", "em", "pearson", "spearman"]
+            has_keyword = any(k in text for k in keywords)
+            if not has_keyword:
+                return 0.0
+            # Find numbers like 0.85, .92, 85, 92
+            raw_numbers = re.findall(r"(0?\.\d{2,}|\b\d{2,3}\b)", text)
+            if not raw_numbers:
+                return 0.0
+            values: List[float] = []
+            for n in raw_numbers:
+                try:
+                    v = float(n)
+                    if v > 1.0 and v <= 100.0:
+                        v = v / 100.0
+                    if 0.0 <= v <= 1.0:
+                        values.append(v)
+                except Exception:
+                    continue
+            if not values:
+                return 0.0
+            # Use median to reduce outlier influence, cap modestly
+            values.sort()
+            median = values[len(values)//2]
+            return clamp(median, 0.0, 1.0)
+        except Exception:
             return 0.0
     
     def calculate_latency(self) -> int:
