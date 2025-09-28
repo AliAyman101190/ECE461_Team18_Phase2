@@ -236,17 +236,17 @@ class RampUpMetric(Metric):
             
             score = 0.0
             
-            # Check for README quality (40% of score)
+            # Check for README quality (50% of score)
             readme_score = self._evaluate_readme(model_info.get("readme", ""))
-            score += readme_score * 0.4
+            score += readme_score * 0.5
             
             # Check for clear model card/description (20% of score)
             card_score = self._evaluate_model_card(model_info)
             score += card_score * 0.2
             
-            # Check for download/usage statistics (40% of score) 
+            # Check for download/usage statistics (30% of score) 
             popularity_score = self._evaluate_popularity(model_info)
-            score += popularity_score * 0.4
+            score += popularity_score * 0.3
             
             self._latency = int((time.time() - start_time) * 1000)
             return min(1.0, score)
@@ -267,9 +267,9 @@ class RampUpMetric(Metric):
         # Check for key sections
         if "usage" in readme_lower or "how to use" in readme_lower:
             score += 0.3
-        if "installation" in readme_lower or "install" in readme_lower:
+        if "example" in readme_lower or "```python" in readme_lower:
             score += 0.3
-        if "example" in readme_lower:
+        if "install" in readme_lower:
             score += 0.2
         if len(readme) > 500:  # Substantial documentation
             score += 0.2
@@ -282,10 +282,10 @@ class RampUpMetric(Metric):
         
         if model_info.get("description"):
             score += 0.7
-        if model_info.get("tags"):
-            score += 0.2  
         if model_info.get("datasets"):
-            score += 0.1
+            score += 0.2
+        if model_info.get("tags"):
+            score += 0.1  
         
         return min(1.0, score)
     
