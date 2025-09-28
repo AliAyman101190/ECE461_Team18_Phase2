@@ -132,9 +132,8 @@ class SizeMetric(Metric):
                     return float(total_bytes) / (1024**3)
         except Exception:
             pass
-        else:
-            # Default assumption for unknown size
-            return 0.6
+        # Default assumption for unknown size
+        return 0.6
     
     def calculate_latency(self) -> int:
         return getattr(self, '_latency', 0)
