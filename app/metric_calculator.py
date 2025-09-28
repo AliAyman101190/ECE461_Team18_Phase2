@@ -153,6 +153,13 @@ class MetricCalculator:
             Tuple of (score, latency_ms)
         """
         try:
+            # Normalize input: parse JSON string into dict if necessary
+            if isinstance(model_data, str):
+                try:
+                    model_data = json.loads(model_data)
+                except Exception:
+                    # If parsing fails, proceed with original value to preserve previous behavior
+                    pass
             # Calculate the metric score
             score = metric.calculate_metric(model_data)
             
