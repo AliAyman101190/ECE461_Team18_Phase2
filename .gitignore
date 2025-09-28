@@ -14,6 +14,7 @@ __pycache__/
 .dist/
 
 # Logging will clutter repo
+logs/
 *.log
 
 # Local folder
@@ -22,6 +23,8 @@ local/
 # Temp files
 app/temp*
 app/tmp*
+temp*
+tmp*
 
 # Coverage files
 .cov*
@@ -30,3 +33,6 @@ htmlcov/
 # Sample I/O files
 samples/
 sample*.txt
+
+# Developmentfile
+TODO.txt
