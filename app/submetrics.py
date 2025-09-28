@@ -601,29 +601,50 @@ class CodeQualityMetric(Metric):
         
         # Look for structured code files
         code_extensions = [".py", ".ipynb", ".js", ".ts", ".r", ".java", ".cpp", ".c"]
-        code_files = [f for f in files if any(f.get("rfilename", "").lower().endswith(ext) for ext in code_extensions)]
+        code_files = []
+        for f in files:
+            name = str((f or {}).get("rfilename") or (f or {}).get("filename") or (f or {}).get("path") or "").lower()
+            if any(name.endswith(ext) for ext in code_extensions):
+                code_files.append(f)
         if code_files:
             score += 0.4
         
         # Look for configuration files
         config_indicators = ["config", "settings", "hyperparameters", "params"]
-        config_files = [f for f in files if any(indicator in f.get("rfilename", "").lower() for indicator in config_indicators)]
+        config_files = []
+        for f in files:
+            name = str((f or {}).get("rfilename") or (f or {}).get("filename") or (f or {}).get("path") or "").lower()
+            if any(indicator in name for indicator in config_indicators):
+                config_files.append(f)
         if config_files:
             score += 0.3
         
         # Look for requirements or setup files
         setup_indicators = ["requirements", "setup", "environment", "conda", "dockerfile", "makefile", "poetry"]
         for file_info in files:
-            filename = file_info.get("rfilename", "").lower()
+            filename = str((file_info or {}).get("rfilename") or (file_info or {}).get("filename") or (file_info or {}).get("path") or "").lower()
             if any(indicator in filename for indicator in setup_indicators):
                 score += 0.3
                 break
         
         # Look for model-specific files that indicate quality
         model_indicators = ["model", "checkpoint", "weights", "tokenizer", "vocab"]
-        model_files = [f for f in files if any(indicator in f.get("rfilename", "").lower() for indicator in model_indicators)]
+        model_files = []
+        for f in files:
+            name = str((f or {}).get("rfilename") or (f or {}).get("filename") or (f or {}).get("path") or "").lower()
+            if any(indicator in name for indicator in model_indicators):
+                model_files.append(f)
         if model_files:
             score += 0.2
+        
+        # README-based bonus even when files exist (indicates usage and examples)
+        readme_code_terms = ["usage", "example", "code", "import", "from transformers", "model =", "tokenizer =", "```python", "```"]
+        if any(term in readme for term in readme_code_terms):
+            score += 0.2
+        
+        # Ensure a small baseline if files exist but indicators are sparse
+        if score == 0.0:
+            score = 0.1
         
         return min(1.0, score)
     
@@ -719,7 +740,8 @@ OUTPUT REQUIREMENTS:
                 # Typical structure: { 'choices': [ { 'message': { 'content': "0.85\n..." } } ] }
                 content: str = resp_json['choices'][0]['message']['content']
                 # score: float = float(content.split('\n', 1)[0].strip())
-                match = re.match(r'^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(?:\n|\\n)', content)
+                # Be flexible: accept a trailing newline or end-of-string after the number
+                match = re.match(r'^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(?:\n|\\n|$)', content)
                 score: float = float(match.group(1)) if match else 0.0 
 
                 logger.info(f"Successfully received performance score: {score}")
@@ -727,6 +749,29 @@ OUTPUT REQUIREMENTS:
             
             except Exception as e:
                 logger.error(f"Could not extract score from Gen AI Studio response: {e}; resp_json: {resp_json}")
+                # Fallback: simple heuristic scan of README for metrics if API parse fails
+                # Look for patterns like 'accuracy 0.85', 'f1 0.90', etc.
+                try:
+                    text = readme.lower() if isinstance(readme, str) else ""
+                    # common metric keywords
+                    keywords = ["accuracy", "acc", "f1", "f-1", "f1-score", "bleu", "rouge", "exact match", "em"]
+                    numbers = re.findall(r"(0?\.\d{2,}|\b\d{2,3}\b)", text)
+                    has_keyword = any(k in text for k in keywords)
+                    if has_keyword and numbers:
+                        # Map plausible percentage (e.g., 85) to 0.85, clamp to [0,1]
+                        vals: List[float] = []
+                        for n in numbers:
+                            try:
+                                v = float(n)
+                                if v > 1.0 and v <= 100.0:
+                                    v = v / 100.0
+                                vals.append(v)
+                            except Exception:
+                                continue
+                        if vals:
+                            return clamp(sum(vals)/len(vals), 0.0, 1.0)
+                except Exception:
+                    pass
                 return 0.0
         except Exception as e:
             logger.error(f"Error calling Gen AI Studio API: {e}")
