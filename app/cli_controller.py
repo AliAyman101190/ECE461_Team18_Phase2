@@ -245,7 +245,7 @@ class CLIController:
                 result = self.process_single_model(obj) # TODO: IMPLEMENT THIS METHOD 
                 if result:
                     # # write output to NDJSON file for debugging purposes
-                    # with open('output.ndjson', 'w') as f:
+                    # with open('output.ndjson', 'a') as f:
                     #     f.write(json.dumps(result) + '\n')
                     print(json.dumps(result))
                     sys.stdout.flush()
@@ -359,37 +359,3 @@ class CLIController:
             print(f"Error: {str(e)}")
             logger.error(f"Error: {str(e)}")
             return 1
-        
-
-    # def check_github_token_validity(self):
-    #     github_token = os.getenv("GITHUB_TOKEN")
-
-    #     if not github_token:
-    #         print("Error: GITHUB_TOKEN environment variable is not set.")
-    #         return False
-
-    #     # Choose a simple API endpoint that requires authentication, e.g., fetching user data
-    #     api_url = "https://api.github.com/user"
-    #     headers = {
-    #         "Authorization": f"token {github_token}",
-    #         "Accept": "application/vnd.github.v3+json"
-    #     }
-
-    #     try:
-    #         response = requests.get(api_url, headers=headers)
-    #         response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
-
-    #         print("GitHub token is valid and has access to user data.")
-    #         print(response.status_code)
-    #         return True
-    #     except requests.exceptions.HTTPError as e:
-    #         if e.response.status_code == 401:
-    #             print(f"Error: GitHub token is invalid or expired. Status code: {e.response.status_code}")
-    #         elif e.response.status_code == 403:
-    #             print(f"Error: GitHub token lacks required permissions. Status code: {e.response.status_code}")
-    #         else:
-    #             print(f"Error checking GitHub token: {e}")
-    #         return False
-    #     except requests.exceptions.RequestException as e:
-    #         print(f"Error connecting to GitHub API: {e}")
-    #         return False

@@ -46,3 +46,29 @@ class RepositoryData:
     success: bool = True
     siblings: Optional[List[str]] = None
     readme: Optional[str] = None
+    
+    # Additional HuggingFace-specific fields
+    author: Optional[str] = None
+    sha: Optional[str] = None
+    last_modified: Optional[str] = None
+    private: Optional[bool] = None
+    gated: Optional[bool] = None
+    disabled: Optional[bool] = None
+    tags: Optional[List[str]] = None
+    citation: Optional[str] = None
+    paperswithcode_id: Optional[str] = None
+    downloads: Optional[int] = None
+    likes: Optional[int] = None
+    card_data: Optional[str] = None
+    used_storage: Optional[int] = None
+    pipeline_tag: Optional[str] = None
+    library_name: Optional[str] = None
+    model_id: Optional[str] = None
+    mask_token: Optional[str] = None
+    widget_data: Optional[str] = None
+    model_index: Optional[str] = None
+    config: Optional[str] = None
+    transformers_info: Optional[str] = None
+    spaces: Optional[List[str]] = None
+    safetensors: Optional[List[str]] = None
+    inference: Optional[bool] = None
