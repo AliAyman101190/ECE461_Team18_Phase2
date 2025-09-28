@@ -740,8 +740,8 @@ OUTPUT REQUIREMENTS:
                 # Typical structure: { 'choices': [ { 'message': { 'content': "0.85\n..." } } ] }
                 content: str = resp_json['choices'][0]['message']['content']
                 # score: float = float(content.split('\n', 1)[0].strip())
-                # Be flexible: accept a trailing newline or end-of-string after the number
-                match = re.match(r'^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(?:\n|\\n|$)', content)
+                # Require a trailing newline or explicit \n after the number (per test expectations)
+                match = re.match(r'^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(?:\n|\\n)', content)
                 score: float = float(match.group(1)) if match else 0.0 
 
                 logger.info(f"Successfully received performance score: {score}")
