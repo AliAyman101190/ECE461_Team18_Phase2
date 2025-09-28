@@ -541,12 +541,18 @@ class DatasetQualityMetric(Metric):
             return 0.0
     
     def _evaluate_dataset_reputation(self, model_info: Dict[str, Any]) -> float:
-        """Evaluate dataset quality using explicit signals only: datasets list, homepage/readme mentions."""
+        """Evaluate dataset quality using multiple signals: datasets, tags, homepage, README."""
+        score = 0.0
+
         # Primary: explicit datasets list
         datasets = model_info.get("datasets") or []
         datasets_lower = [str(d).lower() for d in datasets] if isinstance(datasets, list) else []
 
-        # Homepage URL and README text
+        # Secondary: tags that may include dataset names
+        tags = model_info.get("tags") or []
+        tags_lower = [str(t).lower() for t in tags if t]
+
+        # Tertiary: homepage URL and README text
         homepage = (model_info.get("homepage") or "").lower()
         readme = (model_info.get("readme") or "").lower()
 
@@ -556,20 +562,32 @@ class DatasetQualityMetric(Metric):
             "mnist", "cifar", "cifar10", "cifar-10", "cifar100", "cifar-100"
         }
 
-        # If explicit datasets are provided
-        if datasets_lower:
-            # Known high-quality datasets get high score
-            if any(ds in high_quality_datasets for ds in datasets_lower):
-                return 0.9
-            # Unknown datasets get modest credit
-            return 0.3
+        # Credit known datasets from explicit list most heavily
+        if any(ds in high_quality_datasets for ds in datasets_lower):
+            score += 0.7
 
-        # No explicit datasets list: check known mentions in homepage or README
+        # Tags and homepage/README mentions add confidence
         if any(ds in (homepage + " " + readme) for ds in high_quality_datasets):
-            return 0.6
+            score += 0.2
 
-        # Otherwise, no evidence of dataset quality
-        return 0.0
+        # General dataset documentation in README
+        dataset_terms = [
+            "dataset", "training data", "trained on", "corpus", "data",
+            "pretraining", "fine-tuned", "benchmark"
+        ]
+        if any(term in readme for term in dataset_terms):
+            score += 0.2
+
+        # If there is an explicit datasets list but not in our curated set, still give moderate credit
+        if score == 0.0 and datasets_lower:
+            score = 0.5
+
+        # If nothing detected but there are related tags, give small baseline
+        if score == 0.0 and tags_lower:
+            score = 0.2
+
+        # Ensure non-negative and within [0, 1]
+        return min(1.0, max(0.0, score))
     
     def calculate_latency(self) -> int:
         return getattr(self, '_latency', 0)
