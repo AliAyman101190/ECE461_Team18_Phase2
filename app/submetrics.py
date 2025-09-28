@@ -8,12 +8,14 @@ from datetime import datetime, timezone
 from typing import * 
 from metric import Metric
 try:
-    from dotenv import load_dotenv
+    from dotenv import load_dotenv # pyright: ignore[reportMissingImports]
     # Load .env and allow .env to override empty env vars set by the `run` script
     load_dotenv(override=True)
 except Exception:
     # python-dotenv not installed; tests should still run without env overrides
     pass
+import warnings
+warnings.filterwarnings("ignore", module=r"requests.*")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

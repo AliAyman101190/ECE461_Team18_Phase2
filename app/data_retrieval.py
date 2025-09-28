@@ -7,6 +7,9 @@ from datetime import datetime
 import json
 import base64
 import logging
+import warnings
+
+warnings.filterwarnings("ignore", module=r"requests.*")
 
 # from url_handler import URLData, URLCategory
 from url_data import URLData, RepositoryData
