@@ -99,17 +99,22 @@ def _configure_logging_from_env() -> None:
     else:
         level = logging.DEBUG
 
-    # Configure logging only if a log file is specified and validated
-    if log_file:
-        try:
+    # Configure logging based on LOG_LEVEL, regardless of log file presence
+    try:
+        if log_file:
+            # Configure with file output
             logging.basicConfig(level=level, filename=str(log_file), filemode='a',
                                 format='%(asctime)s - %(levelname)s - %(message)s')
-            # Also set root logger level explicitly
-            logging.getLogger().setLevel(level)
-        except Exception:
-            # If logging configuration fails, treat as fatal
-            print(f"Error: could not configure logging to file: {log_file}", file=sys.stderr)
-            sys.exit(1)
+        else:
+            # Configure without file output (console only)
+            logging.basicConfig(level=level, format='%(asctime)s - %(levelname)s - %(message)s')
+        
+        # Also set root logger level explicitly
+        logging.getLogger().setLevel(level)
+    except Exception:
+        # If logging configuration fails, treat as fatal
+        print(f"Error: could not configure logging to file: {log_file}", file=sys.stderr)
+        sys.exit(1)
 
 
 def _parse_commandline_for_preflight(argv: list[str]) -> str:

@@ -304,19 +304,23 @@ class BusFactorMetric(Metric):
     def _evaluate_organization(self, model_info: Dict[str, Any]) -> float:
         """Higher score for organizational backing"""
         author = model_info.get("author", "").lower()
+        model_id = model_info.get("id", "").lower()
         
         # Known organizations get higher scores
         organizations = [
             "google", "microsoft", "facebook", "meta", "openai", 
-            "anthropic", "huggingface", "stanford", "mit", "berkeley"
+            "anthropic", "huggingface", "stanford", "mit", "berkeley",
+            "research", "ai", "deepmind", "nvidia", "apple"
         ]
         
+        # Check both author and model ID for organization indicators
+        search_text = f"{author} {model_id}"
         for org in organizations:
-            if org in author:
+            if org in search_text:
                 return 1.0
         
         # Check if it looks like an organization (not individual name)
-        if any(indicator in author for indicator in ["team", "lab", "corp", "inc", "ltd"]):
+        if any(indicator in search_text for indicator in ["team", "lab", "corp", "inc", "ltd", "research", "ai", "institute"]):
             return 0.8
         
         return 0.3  # Individual author
@@ -403,31 +407,64 @@ class AvailableScoreMetric(Metric):
         score = 0.0
         
         # Check for dataset tags/metadata
-        if model_info.get("datasets"):
+        datasets = model_info.get("datasets")
+        if datasets:
             score += 0.6
         
         # Check README for dataset information (safe default)
         readme = (model_info.get("readme") or "").lower()
-        if any(term in readme for term in ["dataset", "training data", "trained on"]):
+        dataset_terms = ["dataset", "training data", "trained on", "corpus", "data", "pretraining", "fine-tuned", "benchmark"]
+        if any(term in readme for term in dataset_terms):
             score += 0.4
+        
+        # Check tags for dataset information
+        tags = model_info.get("tags") or []
+        dataset_tags = ["dataset", "corpus", "benchmark", "evaluation"]
+        if any(any(tag_term in str(tag).lower() for tag_term in dataset_tags) for tag in tags):
+            score += 0.2
+        
+        # Check for model card or description mentioning datasets
+        description = (model_info.get("description") or "").lower()
+        if description and any(term in description for term in dataset_terms):
+            score += 0.3
         
         return min(1.0, score)
     
     def _evaluate_code_availability(self, model_info: Dict[str, Any]) -> float:
         """Evaluate code availability"""
         files = model_info.get("siblings") or []
-        if not files:
-            return 0.0
+        readme = model_info.get("readme", "").lower()
         
         score = 0.0
-        code_indicators = [".py", ".ipynb", "train", "eval", "inference"]
         
-        for file_info in files:
-            filename = file_info.get("rfilename", "").lower()
-            for indicator in code_indicators:
-                if indicator in filename:
-                    score += 0.2
+        # Check for actual code files
+        if files:
+            code_indicators = [".py", ".ipynb", ".js", ".ts", ".r", "train", "eval", "inference", "example", "demo", "config"]
+            
+            for file_info in files:
+                filename = file_info.get("rfilename", "").lower()
+                for indicator in code_indicators:
+                    if indicator in filename:
+                        score += 0.2
+                        break
+        
+        # Check README for code examples or usage instructions
+        code_terms = ["usage", "example", "code", "import", "from transformers", "model =", "tokenizer =", "```python", "```"]
+        if any(term in readme for term in code_terms):
+            score += 0.4
+        
+        # Check for model-specific files that indicate usability
+        if files:
+            model_files = ["config.json", "tokenizer", "vocab", "model.safetensors", "pytorch_model.bin"]
+            for file_info in files:
+                filename = file_info.get("rfilename", "").lower()
+                if any(model_file in filename for model_file in model_files):
+                    score += 0.3
                     break
+        
+        # If no files but substantial documentation with usage info, still give some credit
+        if not files and len(readme) > 500 and any(term in readme for term in ["usage", "how to use", "import"]):
+            score = 0.6
         
         return min(1.0, score)
     
@@ -511,28 +548,41 @@ class CodeQualityMetric(Metric):
     def _evaluate_code_presence(self, model_info: Dict[str, Any]) -> float:
         """Basic evaluation of code presence and organization"""
         files = model_info.get("siblings") or []
+        readme = model_info.get("readme", "").lower()
+        
+        # If no files but has substantial README, still give some credit
         if not files:
+            if len(readme) > 1000 and any(keyword in readme for keyword in ["usage", "example", "code", "implementation"]):
+                return 0.5
             return 0.1
         
         score = 0.0
         
         # Look for structured code files
-        python_files = [f for f in files if f.get("rfilename", "").endswith(".py")]
-        if python_files:
+        code_extensions = [".py", ".ipynb", ".js", ".ts", ".r", ".java", ".cpp", ".c"]
+        code_files = [f for f in files if any(f.get("rfilename", "").lower().endswith(ext) for ext in code_extensions)]
+        if code_files:
             score += 0.4
         
         # Look for configuration files
-        config_files = [f for f in files if "config" in f.get("rfilename", "").lower()]
+        config_indicators = ["config", "settings", "hyperparameters", "params"]
+        config_files = [f for f in files if any(indicator in f.get("rfilename", "").lower() for indicator in config_indicators)]
         if config_files:
             score += 0.3
         
         # Look for requirements or setup files
-        setup_indicators = ["requirements", "setup", "environment"]
+        setup_indicators = ["requirements", "setup", "environment", "conda", "dockerfile", "makefile", "poetry"]
         for file_info in files:
             filename = file_info.get("rfilename", "").lower()
             if any(indicator in filename for indicator in setup_indicators):
                 score += 0.3
                 break
+        
+        # Look for model-specific files that indicate quality
+        model_indicators = ["model", "checkpoint", "weights", "tokenizer", "vocab"]
+        model_files = [f for f in files if any(indicator in f.get("rfilename", "").lower() for indicator in model_indicators)]
+        if model_files:
+            score += 0.2
         
         return min(1.0, score)
     
