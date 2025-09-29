@@ -136,17 +136,6 @@ class SizeMetric(Metric):
         """Extract model size in GB from model info"""
         # Try to get size from various possible fields
         if "size" in model_info:
-            return float(model_info["size"]) / (1024**3)  # Convert bytes to GB
-        elif "model_size" in model_info:
-            return float(model_info["model_size"])
-        elif "safetensors" in model_info:
-            try:
-                st = model_info["safetensors"]
-                # HF can return a dict with a 'total' size or a list of files
-    def _get_model_size(self, model_info: Dict[str, Any]) -> float:
-        """Extract model size in GB from model info"""
-        # Try to get size from various possible fields
-        if "size" in model_info:
             try:
                 raw_size = float(model_info["size"])  # Could be bytes or GB
             except Exception:
