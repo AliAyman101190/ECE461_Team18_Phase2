@@ -1,5 +1,6 @@
 import os
 import math
+from pyexpat import model
 import re
 import time
 import json
@@ -84,25 +85,35 @@ class SizeMetric(Metric):
                 # Calculate effective memory limit after accounting for OS and overhead
                 effective_limit_gb = limit_gb * self.utilization_factors[hardware]
                 
-                # Continuous linear scoring that never goes to 0.0
-                usage_ratio = model_size_gb / effective_limit_gb
+                usage = limit_gb / model_size_gb
+                # if usage > 1.0:
+                #     return 1.0
+                # else: 
+                #     return usage
+                scores[hardware] = usage if usage <= 1.0 else 1.0
+
+
+                # cursor is on some fuck shit - ignore all the below
+
+                # # Continuous linear scoring that never goes to 0.0
+                # usage_ratio = model_size_gb / effective_limit_gb
                 
-                # Linear scaling: optimized for expected test case patterns
-                # Fine-tuned to produce scores closer to expected values
-                if usage_ratio <= 0.5:
-                    # Small models get high scores (0.5-1.0 range)
-                    raw_score = 1.0 - (usage_ratio * 1.0)
-                elif usage_ratio <= 1.0:
-                    # Medium models get moderate scores (0.25-0.5 range) 
-                    raw_score = 0.75 - ((usage_ratio - 0.5) * 1.0)
-                else:
-                    # Large models get lower but non-zero scores (0.05-0.25 range)
-                    raw_score = max(0.15, 0.25 - ((usage_ratio - 1.0) * 0.2))
+                # # Linear scaling: optimized for expected test case patterns
+                # # Fine-tuned to produce scores closer to expected values
+                # if usage_ratio <= 0.5:
+                #     # Small models get high scores (0.5-1.0 range)
+                #     raw_score = 1.0 - (usage_ratio * 1.0)
+                # elif usage_ratio <= 1.0:
+                #     # Medium models get moderate scores (0.25-0.5 range) 
+                #     raw_score = 0.75 - ((usage_ratio - 0.5) * 1.0)
+                # else:
+                #     # Large models get lower but non-zero scores (0.05-0.25 range)
+                #     raw_score = max(0.15, 0.25 - ((usage_ratio - 1.0) * 0.2))
                 
-                raw_score = max(0.15, raw_score)
+                # raw_score = max(0.15, raw_score)
                 
-                scores[hardware] = clamp(raw_score, 0.05, 1.0)
-                logger.debug(f"SizeMetric: {hardware} - model:{model_size_gb:.3f}GB, limit:{effective_limit_gb:.3f}GB, usage_ratio:{usage_ratio:.3f}, score:{scores[hardware]:.2f}")
+                # scores[hardware] = clamp(raw_score, 0.05, 1.0)
+                # logger.debug(f"SizeMetric: {hardware} - model:{model_size_gb:.3f}GB, limit:{effective_limit_gb:.3f}GB, usage_ratio:{usage_ratio:.3f}, score:{scores[hardware]:.2f}")
                     
             self._latency = int((time.time() - start_time) * 1000)
             return scores
