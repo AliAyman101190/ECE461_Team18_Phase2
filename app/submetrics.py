@@ -747,7 +747,7 @@ OUTPUT REQUIREMENTS:
             # Have AI check README for performance metrics 
             readme_score = self._evaluate_performance_in_readme(model_info.get("readme", ""))
             score += readme_score
-            if score == 0.0: score = 0.1
+
             self._latency = int((time.time() - start_time) * 1000)
             return score
             
