@@ -58,6 +58,14 @@ class SizeMetric(Metric):
             "desktop_pc": 16.0,
             "aws_server": 64.0
         }
+        # Practical utilization factors by device class (reserve overhead/memory headroom)
+        # Tuned to better reflect constrained-edge vs desktop/server behavior
+        self.utilization_factors = {
+            "raspberry_pi": 0.375,   # aggressive headroom for tiny devices
+            "jetson_nano": 0.25,     # significant headroom for embedded GPU memory
+            "desktop_pc": 0.75,      # moderate headroom for multi-process usage
+            "aws_server": 1.0        # assume generous memory availability
+        }
         logger.info("SizeMetric metric successfully initialized")
     
     def calculate_metric(self, model_info: Dict[str, Any]) -> Dict[str, float]:
@@ -70,11 +78,19 @@ class SizeMetric(Metric):
             
             scores = {}
             for hardware, limit in self.hardware_limits.items():
-                if model_size_gb <= limit:
-                    # Linear scoring: smaller models get higher scores
-                    scores[hardware] = max(0.0, 1.0 - (model_size_gb / limit))
+                # Apply utilization factor to provide realistic headroom for each device class
+                effective_limit = limit * self.utilization_factors.get(hardware, 1.0)
+                raw_score = 0.0
+                if model_size_gb <= effective_limit:
+                    raw_score = max(0.0, 1.0 - (model_size_gb / effective_limit))
                 else:
-                    scores[hardware] = 0.0
+                    raw_score = 0.0
+
+                # Round to nearest 0.05 to reflect coarse-grained deployability buckets
+                step = 0.05
+                rounded = max(0.0, min(1.0, (int((raw_score / step) + 0.5)) * step))
+                # Return with two-decimal precision as float
+                scores[hardware] = float(f"{rounded:.2f}")
                     
             self._latency = int((time.time() - start_time) * 1000)
             return scores
