@@ -1,4 +1,5 @@
 import os
+import math
 import re
 import time
 import json
@@ -86,9 +87,14 @@ class SizeMetric(Metric):
                 else:
                     raw_score = 0.0
 
-                # Round to nearest 0.05 to reflect coarse-grained deployability buckets
+                # Round to coarse-grained deployability buckets
                 step = 0.05
-                rounded = max(0.0, min(1.0, (int((raw_score / step) + 0.5)) * step))
+                if hardware in ("raspberry_pi", "jetson_nano"):
+                    # For constrained devices, round down to avoid optimistic scores
+                    rounded = math.floor(max(0.0, min(1.0, raw_score)) / step) * step
+                else:
+                    # For desktop/server, round to nearest
+                    rounded = max(0.0, min(1.0, (int((raw_score / step) + 0.5)) * step))
                 # Return with two-decimal precision as float
                 scores[hardware] = float(f"{rounded:.2f}")
                     
