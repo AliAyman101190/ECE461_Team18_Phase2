@@ -453,19 +453,19 @@ class AvailableScoreMetric(Metric):
             score += 0.6
         
         # Check README for dataset information
-        readme = (model_info.get("readme") or "").lower()
+        readme = (model_info.get("readme", "")).lower()
         dataset_terms = ["dataset", "training data", "trained on", "corpus", "data", "pretraining", "fine-tuned", "benchmark"]
         if any(term in readme for term in dataset_terms):
             score += 0.4
         
         # Check tags for dataset information
-        tags = model_info.get("tags") or []
+        tags = model_info.get("tags", [])
         dataset_tags = ["dataset", "corpus", "benchmark", "evaluation"]
         if any(any(tag_term in str(tag).lower() for tag_term in dataset_tags) for tag in tags):
             score += 0.2
         
         # Check for model card or description mentioning datasets
-        description = (model_info.get("description") or "").lower()
+        description = (model_info.get("description", "")).lower()
         if description and any(term in description for term in dataset_terms):
             score += 0.3
         
@@ -473,9 +473,9 @@ class AvailableScoreMetric(Metric):
     
     def _evaluate_code_availability(self, model_info: Dict[str, Any]) -> float:
         """Evaluate code availability"""
-        files = model_info.get("siblings") or []
+        files = model_info.get("siblings", [])
         readme = model_info.get("readme", "").lower()
-        
+
         score = 0.0
         
         # Check for actual code files
