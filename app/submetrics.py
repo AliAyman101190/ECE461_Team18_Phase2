@@ -66,7 +66,7 @@ class SizeMetric(Metric):
             # Raspberry Pi 4 (2GB) typical available RAM is significantly less after OS/services
             "raspberry_pi": {
                 "reserved_os_gb": 0.8,            # OS + background services
-                "runtime_multiplier": 1.3,        # tuned to avoid zero score for moderate models
+                "runtime_multiplier": 1.25,       # tuned to avoid zero score for moderate models
                 "framework_overhead_gb": 0.2      # framework/runtime overhead
             },
             # Jetson Nano (4GB) has shared memory with GPU and higher runtime overhead
