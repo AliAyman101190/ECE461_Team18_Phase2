@@ -558,18 +558,19 @@ class DatasetQualityMetric(Metric):
         # datasets = model_info.get("datasets", [])
         # if not datasets:
         #     return 0.2
-        homepage = (model_info.get("homepage") or "").lower()
-        if not homepage:
-            return 0.2
+        # homepage = (model_info.get("homepage") or "").lower()
+        # if not homepage:
+        #     return 0.2
+        readme = (model_info.get("readme", "")).lower()
         
         high_quality_datasets = [
             "common_voice", "librispeech", "imagenet", "coco", "squad",
-            "glue", "superglue", "wikitext", "bookcorpus", "openwebtext", "arxiv"
+            "glue", "superglue", "wikitext", "bookcorpus", "openwebtext", "arxiv", "wikipedia"
         ]
         
         for dataset in high_quality_datasets:
-            if dataset in homepage:
-                return 0.9
+            if dataset in readme:
+                return 1.0
         
         # Unknown datasets get moderate score
         return 0.5
@@ -682,11 +683,13 @@ class PerformanceMetric(Metric):
         return """
 You are an expert in evaluating machine learning model performance claims based on README content and available benchmark files.
 Your task is to assess the credibility and quality of performance information provided for a given model.
+
 When evaluating the README, look for:
-- Explicit performance metrics (accuracy, F1 score, BLEU, etc.)
+- Explicit performance metrics (e.g. accuracy)
 - Benchmark results
 - Clear descriptions of evaluation methodology
 - Numerical results that suggest actual benchmarking was performed
+- Thorough explanation on how the model works and what it excels at
 
 OUTPUT REQUIREMENTS:
 - Start your response with the determined score and a newline character (e.g. '0.85\\n')
