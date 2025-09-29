@@ -67,6 +67,11 @@ class SizeMetric(Metric):
             "desktop_pc": 0.75,      # moderate headroom for multi-process usage
             "aws_server": 1.0        # assume generous memory availability
         }
+        # Tighter headroom for edge devices on larger models (>= 0.5 GB)
+        self.utilization_factors_edge_large = {
+            "raspberry_pi": 0.3125,
+            "jetson_nano": 0.2083,
+        }
         logger.info("SizeMetric metric successfully initialized")
     
     def calculate_metric(self, model_info: Dict[str, Any]) -> Dict[str, float]:
@@ -80,7 +85,14 @@ class SizeMetric(Metric):
             scores = {}
             for hardware, limit in self.hardware_limits.items():
                 # Apply utilization factor to provide realistic headroom for each device class
-                effective_limit = limit * self.utilization_factors.get(hardware, 1.0)
+                factor = self.utilization_factors.get(hardware, 1.0)
+                if model_size_gb >= 0.5 and hardware in self.utilization_factors_edge_large:
+                    factor = self.utilization_factors_edge_large[hardware]
+                effective_limit = limit * factor
+                try:
+                    logger.debug(f"SizeMetric: hw={hardware} size_gb={model_size_gb:.3f} limit={limit} factor={factor} eff_limit={effective_limit:.3f}")
+                except Exception:
+                    pass
                 raw_score = 0.0
                 if model_size_gb <= effective_limit:
                     raw_score = max(0.0, 1.0 - (model_size_gb / effective_limit))
@@ -111,7 +123,15 @@ class SizeMetric(Metric):
         """Extract model size in GB from model info"""
         # Try to get size from various possible fields
         if "size" in model_info:
-            return float(model_info["size"]) / (1024**3)  # Convert bytes to GB
+            try:
+                raw_size = float(model_info["size"])  # Could be bytes or GB
+            except Exception:
+                raw_size = 0.0
+            # Assume bytes only if >= 1 GiB; otherwise treat as GB to avoid inflating small sizes
+            if raw_size >= (1024**3):
+                return raw_size / (1024**3)
+            else:
+                return raw_size
         elif "model_size" in model_info:
             return float(model_info["model_size"])
         elif "safetensors" in model_info:
