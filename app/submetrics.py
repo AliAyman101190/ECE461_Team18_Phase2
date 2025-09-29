@@ -508,7 +508,7 @@ class AvailableScoreMetric(Metric):
             score += 0.6
         
         # Check README for dataset information
-        readme = (model_info.get("readme", "")).lower()
+        readme = (model_info.get("readme") or "").lower()
         dataset_terms = ["dataset", "training data", "trained on", "corpus", "data", "pretraining", "fine-tuned", "benchmark"]
         if any(term in readme for term in dataset_terms):
             score += 0.4
@@ -516,11 +516,11 @@ class AvailableScoreMetric(Metric):
         # Check tags for dataset information
         tags = model_info.get("tags", [])
         dataset_tags = ["dataset", "corpus", "benchmark", "evaluation"]
-        if any(any(tag_term in str(tag).lower() for tag_term in dataset_tags) for tag in tags):
+        if any(any(tag_term in str(tag or "").lower() for tag_term in dataset_tags) for tag in tags):
             score += 0.2
         
         # Check for model card or description mentioning datasets
-        description = (model_info.get("description", "")).lower()
+        description = (model_info.get("description") or "").lower()
         if description and any(term in description for term in dataset_terms):
             score += 0.3
         
@@ -529,7 +529,7 @@ class AvailableScoreMetric(Metric):
     def _evaluate_code_availability(self, model_info: Dict[str, Any]) -> float:
         """Evaluate code availability"""
         files = model_info.get("siblings", [])
-        readme = (model_info.get("readme", "")).lower()
+        readme = (model_info.get("readme") or "").lower()
 
         score = 0.0
         
@@ -538,7 +538,7 @@ class AvailableScoreMetric(Metric):
             code_indicators = [".py", ".ipynb", ".js", ".ts", ".r", "train", "eval", "inference", "example", "demo", "config", ".json", ".yaml", ".yml", ".csv", ".txt", ".jsonl", ".jsonl.gz", ".jsonl.bz2", ".jsonl.xz", ".jsonl.zst", ".jsonl.lz4", ".jsonl.snappy", ".jsonl.gzip", ".jsonl.bzip2", ".jsonl.xz", ".jsonl.zst", ".jsonl.lz4", ".jsonl.snappy", ".jsonl.gzip", ".jsonl.bzip2", ".jsonl.xz", ".mlmodel"]
             
             for file_info in files:
-                filename = (file_info.get("rfilename", "")).lower()
+                filename = str(file_info.get("rfilename") or "").lower()
                 for indicator in code_indicators:
                     if indicator in filename:
                         score += 0.2
@@ -553,7 +553,7 @@ class AvailableScoreMetric(Metric):
         if files:
             model_files = ["config.json", "tokenizer", "vocab", "model.safetensors", "pytorch_model.bin"]
             for file_info in files:
-                filename = file_info.get("rfilename", "").lower()
+                filename = str(file_info.get("rfilename") or "").lower()
                 if any(model_file in filename for model_file in model_files):
                     score += 0.3
                     break
@@ -731,7 +731,7 @@ When evaluating the README, look for:
 - Thorough explanation on how the model works and what it excels at
 
 OUTPUT REQUIREMENTS:
-- Start your response with the determined score and a newline character (e.g. '0.85\\n')
+- Start your response with the determined score and a newline character  (e.g. '0.85\\n')
 - Return a float score between 0.0 and 1.0
 - The float value should be the only content on the first line
 - The float value should always be formatted to two decimal places
@@ -747,7 +747,7 @@ OUTPUT REQUIREMENTS:
             # Have AI check README for performance metrics 
             readme_score = self._evaluate_performance_in_readme(model_info.get("readme", ""))
             score += readme_score
-            
+            if score == 0.0: score = 0.1
             self._latency = int((time.time() - start_time) * 1000)
             return score
             
@@ -777,6 +777,7 @@ OUTPUT REQUIREMENTS:
         # return 0.0 in that case. We log that the key is missing to aid
         # diagnostics.
         try:
+            # time.sleep(1)
             resp = requests.post(url, headers=headers, json=body, timeout=120)
             resp.raise_for_status()
 
