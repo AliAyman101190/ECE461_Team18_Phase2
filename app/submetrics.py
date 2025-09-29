@@ -72,7 +72,7 @@ class SizeMetric(Metric):
             # Jetson Nano (4GB) has shared memory with GPU and higher runtime overhead
             "jetson_nano": {
                 "reserved_os_gb": 1.5,            # OS + GPU reservation
-                "runtime_multiplier": 2.0,
+                "runtime_multiplier": 1.5,
                 "framework_overhead_gb": 0.6
             },
             # Desktop and server have more headroom; keep milder penalties
