@@ -58,6 +58,33 @@ class SizeMetric(Metric):
             "desktop_pc": 16.0,
             "aws_server": 64.0
         }
+        # Device-aware runtime profiles to better approximate real memory usage
+        # Values chosen to reflect OS reservation and runtime/activation overheads
+        self.device_profiles: Dict[str, Dict[str, float]] = {
+            # Raspberry Pi 4 (2GB) typical available RAM is significantly less after OS/services
+            "raspberry_pi": {
+                "reserved_os_gb": 0.8,            # OS + background services
+                "runtime_multiplier": 2.0,        # weights -> runtime activations
+                "framework_overhead_gb": 0.2      # framework/runtime overhead
+            },
+            # Jetson Nano (4GB) has shared memory with GPU and higher runtime overhead
+            "jetson_nano": {
+                "reserved_os_gb": 1.5,            # OS + GPU reservation
+                "runtime_multiplier": 2.0,
+                "framework_overhead_gb": 0.6
+            },
+            # Desktop and server have more headroom; keep milder penalties
+            "desktop_pc": {
+                "reserved_os_gb": 2.0,
+                "runtime_multiplier": 1.5,
+                "framework_overhead_gb": 0.3
+            },
+            "aws_server": {
+                "reserved_os_gb": 4.0,
+                "runtime_multiplier": 1.25,
+                "framework_overhead_gb": 0.5
+            }
+        }
         logger.info("SizeMetric metric successfully initialized")
     
     def calculate_metric(self, model_info: Dict[str, Any]) -> Dict[str, float]:
@@ -68,11 +95,29 @@ class SizeMetric(Metric):
             # Parse model size from data (expecting JSON with model info)
             model_size_gb = self._get_model_size(model_info)
             
-            scores = {}
-            for hardware, limit in self.hardware_limits.items():
-                if model_size_gb <= limit:
-                    # Linear scoring: smaller models get higher scores
-                    scores[hardware] = max(0.0, 1.0 - (model_size_gb / limit))
+            scores: Dict[str, float] = {}
+            for hardware, limit_gb in self.hardware_limits.items():
+                profile = self.device_profiles.get(hardware, {
+                    "reserved_os_gb": 1.0,
+                    "runtime_multiplier": 1.5,
+                    "framework_overhead_gb": 0.3
+                })
+
+                # Effective available memory after reserving for OS/driver overhead
+                effective_limit_gb = max(0.0, float(limit_gb) - float(profile.get("reserved_os_gb", 0.0)))
+                # Approximate runtime memory required by the model: weights + activations + framework
+                effective_model_gb = (
+                    float(model_size_gb) * float(profile.get("runtime_multiplier", 1.0))
+                ) + float(profile.get("framework_overhead_gb", 0.0))
+
+                if effective_limit_gb <= 0.0:
+                    scores[hardware] = 0.0
+                    continue
+
+                if effective_model_gb <= effective_limit_gb:
+                    # Linear scoring within effective headroom
+                    raw_score = 1.0 - (effective_model_gb / effective_limit_gb)
+                    scores[hardware] = clamp(raw_score, 0.0, 1.0)
                 else:
                     scores[hardware] = 0.0
                     
