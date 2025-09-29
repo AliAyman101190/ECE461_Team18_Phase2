@@ -582,7 +582,11 @@ class DatasetQualityMetric(Metric):
         
         try:
             # For now, base quality on dataset documentation and known datasets
-            score = self._evaluate_dataset_reputation(model_info)
+            # score = self._evaluate_dataset_reputation(model_info)
+            if model_info.get('dataset_present'):
+                score = 1.0
+            else: 
+                score = 0.0
             
             self._latency = int((time.time() - start_time) * 1000)
             return score
@@ -632,7 +636,11 @@ class CodeQualityMetric(Metric):
         
         try:
             # Simplified code quality assessment
-            score = self._evaluate_code_presence(model_info)
+            # score = self._evaluate_code_presence(model_info)
+            if model_info.get('code_present'):
+                score = 1.0
+            else: 
+                score = 0.0
             
             self._latency = int((time.time() - start_time) * 1000)
             return score

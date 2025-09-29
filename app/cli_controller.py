@@ -174,6 +174,10 @@ class CLIController:
                     val = None
                 merged[key] = val
 
+            merged['code_present'] = False if code_repo is None else True
+            merged['dataset_present'] = False if dataset_repo is None else True
+            # print(merged['code_present'])
+            # print(merged['dataset_present'])
             # call metric calculator - pass the merged dict directly (calculator expects a dict)
             metric_results = self.metric_calculator.calculate_all_metrics(merged, "MODEL")
             metric_results['name'] = model_dict['name']

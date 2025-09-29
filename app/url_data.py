@@ -72,3 +72,5 @@ class RepositoryData:
     spaces: Optional[List[str]] = None
     safetensors: Optional[List[str]] = None
     inference: Optional[bool] = None
+    dataset_present: Optional[bool] = None
+    code_present: Optional[bool] = None
