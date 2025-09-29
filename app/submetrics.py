@@ -516,7 +516,7 @@ class AvailableScoreMetric(Metric):
     def _evaluate_code_availability(self, model_info: Dict[str, Any]) -> float:
         """Evaluate code availability"""
         files = model_info.get("siblings", [])
-        readme = model_info.get("readme", "").lower()
+        readme = (model_info.get("readme", "")).lower()
 
         score = 0.0
         
@@ -525,7 +525,7 @@ class AvailableScoreMetric(Metric):
             code_indicators = [".py", ".ipynb", ".js", ".ts", ".r", "train", "eval", "inference", "example", "demo", "config", ".json", ".yaml", ".yml", ".csv", ".txt", ".jsonl", ".jsonl.gz", ".jsonl.bz2", ".jsonl.xz", ".jsonl.zst", ".jsonl.lz4", ".jsonl.snappy", ".jsonl.gzip", ".jsonl.bzip2", ".jsonl.xz", ".jsonl.zst", ".jsonl.lz4", ".jsonl.snappy", ".jsonl.gzip", ".jsonl.bzip2", ".jsonl.xz", ".mlmodel"]
             
             for file_info in files:
-                filename = file_info.get("rfilename", "").lower()
+                filename = (file_info.get("rfilename", "")).lower()
                 for indicator in code_indicators:
                     if indicator in filename:
                         score += 0.2
@@ -764,7 +764,7 @@ OUTPUT REQUIREMENTS:
         # return 0.0 in that case. We log that the key is missing to aid
         # diagnostics.
         try:
-            resp = requests.post(url, headers=headers, json=body, timeout=15)
+            resp = requests.post(url, headers=headers, json=body, timeout=120)
             resp.raise_for_status()
 
             if resp.status_code != 200:
