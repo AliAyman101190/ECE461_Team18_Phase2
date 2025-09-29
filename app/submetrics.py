@@ -59,19 +59,33 @@ class SizeMetric(Metric):
             "desktop_pc": 16.0,
             "aws_server": 64.0
         }
-        # Practical utilization factors by device class (reserve overhead/memory headroom)
-        # Tuned to better reflect constrained-edge vs desktop/server behavior
-        self.utilization_factors = {
-            "raspberry_pi": 0.375,   # aggressive headroom for tiny devices
-            "jetson_nano": 0.25,     # significant headroom for embedded GPU memory
-            "desktop_pc": 0.75,      # moderate headroom for multi-process usage
-            "aws_server": 1.0        # assume generous memory availability
+
+        self.device_profiles: Dict[str, Dict[str, float]] = {
+            # Raspberry Pi 4 (2GB) typical available RAM is significantly less after OS/services
+            "raspberry_pi": {
+                "reserved_os_gb": 0.8,            # OS + background services
+                "runtime_multiplier": 2.0,        # weights -> runtime activations
+                "framework_overhead_gb": 0.2      # framework/runtime overhead
+            },
+            # Jetson Nano (4GB) has shared memory with GPU and higher runtime overhead
+            "jetson_nano": {
+                "reserved_os_gb": 1.5,            # OS + GPU reservation
+                "runtime_multiplier": 2.0,
+                "framework_overhead_gb": 0.6
+            },
+            # Desktop and server have more headroom; keep milder penalties
+            "desktop_pc": {
+                "reserved_os_gb": 2.0,
+                "runtime_multiplier": 1.5,
+                "framework_overhead_gb": 0.3
+            },
+            "aws_server": {
+                "reserved_os_gb": 4.0,
+                "runtime_multiplier": 1.25,
+                "framework_overhead_gb": 0.5
+            }
         }
-        # Tighter headroom for edge devices on larger models (>= 0.5 GB)
-        self.utilization_factors_edge_large = {
-            "raspberry_pi": 0.3125,
-            "jetson_nano": 0.2083,
-        }
+        
         logger.info("SizeMetric metric successfully initialized")
     
     def calculate_metric(self, model_info: Dict[str, Any]) -> Dict[str, float]:
