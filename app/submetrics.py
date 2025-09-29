@@ -60,6 +60,8 @@ class SizeMetric(Metric):
             "aws_server": 64.0
         }
 
+     # Device-aware runtime profiles to better approximate real memory usage
+        # Values chosen to reflect OS reservation and runtime/activation overheads
         self.device_profiles: Dict[str, Dict[str, float]] = {
             # Raspberry Pi 4 (2GB) typical available RAM is significantly less after OS/services
             "raspberry_pi": {
@@ -85,7 +87,6 @@ class SizeMetric(Metric):
                 "framework_overhead_gb": 0.5
             }
         }
-        
         logger.info("SizeMetric metric successfully initialized")
     
     def calculate_metric(self, model_info: Dict[str, Any]) -> Dict[str, float]:
@@ -96,33 +97,31 @@ class SizeMetric(Metric):
             # Parse model size from data (expecting JSON with model info)
             model_size_gb = self._get_model_size(model_info)
             
-            scores = {}
-            for hardware, limit in self.hardware_limits.items():
-                # Apply utilization factor to provide realistic headroom for each device class
-                factor = self.utilization_factors.get(hardware, 1.0)
-                if model_size_gb >= 0.5 and hardware in self.utilization_factors_edge_large:
-                    factor = self.utilization_factors_edge_large[hardware]
-                effective_limit = limit * factor
-                try:
-                    logger.debug(f"SizeMetric: hw={hardware} size_gb={model_size_gb:.3f} limit={limit} factor={factor} eff_limit={effective_limit:.3f}")
-                except Exception:
-                    pass
-                raw_score = 0.0
-                if model_size_gb <= effective_limit:
-                    raw_score = max(0.0, 1.0 - (model_size_gb / effective_limit))
-                else:
-                    raw_score = 0.0
+            scores: Dict[str, float] = {}
+            for hardware, limit_gb in self.hardware_limits.items():
+                profile = self.device_profiles.get(hardware, {
+                    "reserved_os_gb": 1.0,
+                    "runtime_multiplier": 1.5,
+                    "framework_overhead_gb": 0.3
+                })
 
-                # Round to coarse-grained deployability buckets
-                step = 0.05
-                if hardware in ("raspberry_pi", "jetson_nano"):
-                    # For constrained devices, round down to avoid optimistic scores
-                    rounded = math.floor(max(0.0, min(1.0, raw_score)) / step) * step
+                # Effective available memory after reserving for OS/driver overhead
+                effective_limit_gb = max(0.0, float(limit_gb) - float(profile.get("reserved_os_gb", 0.0)))
+                # Approximate runtime memory required by the model: weights + activations + framework
+                effective_model_gb = (
+                    float(model_size_gb) * float(profile.get("runtime_multiplier", 1.0))
+                ) + float(profile.get("framework_overhead_gb", 0.0))
+
+                if effective_limit_gb <= 0.0:
+                    scores[hardware] = 0.0
+                    continue
+
+                if effective_model_gb <= effective_limit_gb:
+                    # Linear scoring within effective headroom
+                    raw_score = 1.0 - (effective_model_gb / effective_limit_gb)
+                    scores[hardware] = clamp(raw_score, 0.0, 1.0)
                 else:
-                    # For desktop/server, round to nearest
-                    rounded = max(0.0, min(1.0, (int((raw_score / step) + 0.5)) * step))
-                # Return with two-decimal precision as float
-                scores[hardware] = float(f"{rounded:.2f}")
+                    scores[hardware] = 0.0
                     
             self._latency = int((time.time() - start_time) * 1000)
             return scores
@@ -133,6 +132,17 @@ class SizeMetric(Metric):
             # Return minimum scores on error
             return {hw: 0.0 for hw in self.hardware_limits.keys()}
     
+    def _get_model_size(self, model_info: Dict[str, Any]) -> float:
+        """Extract model size in GB from model info"""
+        # Try to get size from various possible fields
+        if "size" in model_info:
+            return float(model_info["size"]) / (1024**3)  # Convert bytes to GB
+        elif "model_size" in model_info:
+            return float(model_info["model_size"])
+        elif "safetensors" in model_info:
+            try:
+                st = model_info["safetensors"]
+                # HF can return a dict with a 'total' size or a list of files
     def _get_model_size(self, model_info: Dict[str, Any]) -> float:
         """Extract model size in GB from model info"""
         # Try to get size from various possible fields
