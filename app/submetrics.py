@@ -959,6 +959,69 @@ class ReproducibilityMetric(Metric):
         """Return the measured latency in milliseconds."""
         return getattr(self, "_latency", 0)
 
+
+
+class ReviewedenessMetric(Metric):
+    """Measures how much of the code was introduced via reviewed pull requests."""
+
+    def __init__(self):
+        super().__init__()
+        self.name = "reviewedeness"
+        self.weight = 0.05
+        self._latency = 0
+        logger.info("ReviewedenessMetric successfully initialized")
+
+    def calculate_metric(self, model_info: Dict[str, Any]) -> float:
+        start_time = time.time()
+        try:
+            repo_url = model_info.get("github_repo", "")
+            if not repo_url:
+                logger.warning("No GitHub repo found in model info")
+                return -1.0  # per the spec, -1 if no repo linked
+
+            reviewed_fraction = self._get_reviewed_fraction(repo_url)
+            self._latency = int((time.time() - start_time) * 1000)
+            return clamp(reviewed_fraction, 0.0, 1.0)
+
+        except Exception as e:
+            logger.error(f"Error calculating ReviewedenessMetric: {e}")
+            self._latency = int((time.time() - start_time) * 1000)
+            return 0.0
+
+    def _get_reviewed_fraction(self, repo_url: str) -> float:
+        """Fetch PR data from GitHub API and compute reviewed code fraction."""
+        headers = {"Accept": "application/vnd.github+json"}
+        token = os.getenv("GITHUB_TOKEN")
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        # Extract owner/repo from URL
+        m = re.search(r"github\.com/([^/]+)/([^/]+)", repo_url)
+        if not m:
+            return 0.0
+        owner, repo = m.group(1), m.group(2)
+
+        # 1. Get merged PRs
+        prs_url = f"https://api.github.com/repos/{owner}/{repo}/pulls?state=closed&per_page=100"
+        resp = requests.get(prs_url, headers=headers, timeout=30)
+        if resp.status_code != 200:
+            logger.warning(f"Failed to fetch PRs for {repo_url}: {resp.text}")
+            return 0.0
+        prs = [pr for pr in resp.json() if pr.get("merged_at")]
+
+        if not prs:
+            return 0.0
+
+        reviewed_prs = [pr for pr in prs if pr.get("review_comments") or pr.get("requested_reviewers")]
+
+        # Approximate fraction of reviewed PRs
+        fraction = len(reviewed_prs) / len(prs)
+        return fraction
+
+    def calculate_latency(self) -> int:
+        return getattr(self, "_latency", 0)
+
+
 def clamp(value: float, min_value: float = 0.0, max_value: float = 1.0) -> float:
     """
     Clip a float between min and max limits
