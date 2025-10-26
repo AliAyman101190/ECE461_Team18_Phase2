@@ -877,9 +877,6 @@ class ReproducibilityMetric(Metric):
         for lang, code in matches:
             lang = (lang or "").lower()
             code = textwrap.dedent(code).strip()
-            # Normalize inconsistent indentation
-            code = "\n".join(line.lstrip() for line in code.splitlines())
-
             if lang in ["python", "py"]:
                 snippets.append(code)
             elif lang in ["bash", "sh"]:
@@ -907,6 +904,9 @@ class ReproducibilityMetric(Metric):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             snippet_path = os.path.join(tmpdir, f"snippet_{index}.py")
+
+            print(f"\n--- Snippet #{index} to be executed ---\n{snippet}\n--------------------------------------\n")
+
             with open(snippet_path, "w", encoding="utf-8") as f:
                 f.write(snippet)
 

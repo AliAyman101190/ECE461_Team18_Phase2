@@ -54,11 +54,11 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------
     model_info_2 = {
         "readme": """
-        ## Example
-        ```python
-        print("Hello world — reproducible example")
-        ```
-        """,
+    ## Example
+    ```python
+    def hello_world():\n    print("Hello world — reproducible example")\nhello_world()
+    ```
+    """,
     }
     run_test_case("Case 1.0 (Runs Without Debugging)", model_info_2)
 
