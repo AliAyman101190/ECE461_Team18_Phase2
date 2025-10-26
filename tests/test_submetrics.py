@@ -10,6 +10,7 @@ if app_dir not in sys.path:
     sys.path.insert(0, app_dir)
 
 from submetrics import SizeMetric, LicenseMetric, PerformanceMetric, clamp
+from reproducibility_metric import ReproducibilityMetric
 
 
 def test_size_metric_various_inputs():
@@ -52,3 +53,50 @@ def test_performance_metric_parsing_and_clamp(monkeypatch):
     assert clamp(-1.0) == 0.0
     assert clamp(2.0) == 1.0
     assert clamp(0.5) == 0.5
+
+def test_reproducibility_metric_code_snippet_detection():
+    rm = ReproducibilityMetric()
+
+    readme_with_code = """
+    Here is some example code:
+    ```python
+    def foo():
+        return "bar"
+    ```
+    More text.
+    """
+    score = rm._has_code_snippets(readme_with_code)
+    assert score == 1.0
+
+    readme_without_code = "This is a README without any code snippets."
+    score2 = rm._has_code_snippets(readme_without_code)
+    assert score2 == 0.0
+
+def test_reproducibility_metric_code_has_errors():
+    rm = ReproducibilityMetric()
+
+    readme_with_error_code = """
+    Here is some example code with an error:
+    ```python
+    def foo()
+        return "bar"
+    ```
+    More text.
+    """
+    score = rm._code_has_errors(readme_with_error_code)
+    assert score == 0.0
+
+def test_reproducibility_metric_code_runs_successfully():
+    rm = ReproducibilityMetric()
+
+    readme_with_good_code = """
+    Here is some example code that runs:
+    ```python
+    def foo():
+        return "bar"
+    print(foo())
+    ```
+    More text.
+    """
+    score = rm._code_runs_successfully(readme_with_good_code)
+    assert score == 1.0

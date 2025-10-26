@@ -103,7 +103,7 @@ def test_metric_calculator_malformed_json():
 
 @pytest.mark.parametrize("cls", [
     SizeMetric, LicenseMetric, RampUpMetric, BusFactorMetric,
-    AvailableScoreMetric, DatasetQualityMetric, CodeQualityMetric, PerformanceMetric,
+    AvailableScoreMetric, DatasetQualityMetric, CodeQualityMetric, PerformanceMetric, ReproducibilityMetric,
 ])
 def test_submetrics_basic_contract(cls):
     """Test that submetric classes implement calculate_metric and calculate_latency with expected returns."""
@@ -171,6 +171,15 @@ def test_all_submetric_edge_cases():
     pm = PerformanceMetric()
     pscore = pm.calculate_metric({"readme": "Value 0.99"})
     assert 0.0 <= pscore <= 1.0
+
+    # ReproducibilityMetric: no README, no siblings
+    rm = ReproducibilityMetric()
+    rpscore = rm.calculate_metric({})
+    assert 0.0 <= rpscore <= 1.0
+
+    # ReproducibilityMetric: README with no code snippets
+    rpscore2 = rm.calculate_metric({"readme": "This is a README without code snippets."})
+    assert 0.0 <= rpscore2 <= 1.0
 
     logger.info('Finished test_all_submetric_edge_cases')
 
