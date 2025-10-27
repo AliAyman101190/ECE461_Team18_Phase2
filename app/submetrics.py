@@ -991,7 +991,7 @@ class ReviewedenessMetric(Metric):
     def _get_reviewed_fraction(self, repo_url: str) -> float:
         """Fetch PR data from GitHub API and compute reviewed code fraction."""
         headers = {"Accept": "application/vnd.github+json"}
-        token = os.getenv("GITHUB_TOKEN")
+        token = os.getenv("TEAM18_GITHUB_TOKEN")
         if token:
             headers["Authorization"] = f"Bearer {token}"
 
