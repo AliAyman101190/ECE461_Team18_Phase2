@@ -9,8 +9,7 @@ app_dir = os.path.join(project_root, 'app')
 if app_dir not in sys.path:
     sys.path.insert(0, app_dir)
 
-from submetrics import SizeMetric, LicenseMetric, PerformanceMetric, clamp
-from reproducibility_metric import ReproducibilityMetric
+from submetrics import SizeMetric, LicenseMetric, PerformanceMetric, ReproducibilityMetric, clamp
 
 
 def test_size_metric_various_inputs():
