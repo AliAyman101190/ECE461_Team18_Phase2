@@ -24,7 +24,7 @@ jobs:
         python -m pip install -r backend/requirements.txt
 
     - name: Run MyPy
-      run: mypy app/
+      run: mypy backend/app/
     - name: Run tests
       run: |
-        python -m pytest --cov=app --cov-report=term-missing tests/
+        python -m pytest --cov=app --cov-report=term-missing backend/tests/
