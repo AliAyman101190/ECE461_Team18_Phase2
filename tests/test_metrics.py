@@ -49,6 +49,15 @@ def sample_model_data_dict():
         
         ## Usage
         This model can be used for text generation tasks.
+
+        ```python
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained("model-name")
+model = AutoModelForCausalLM.from_pretrained("model-name")
+inputs = tokenizer("Hello, my name is", return_tensors="pt")
+outputs = model.generate(**inputs)
+print(tokenizer.decode(outputs[0]))
+        ```
         
         ## Training Data
         Trained on a curated dataset of high-quality text.
@@ -177,9 +186,17 @@ def test_all_submetric_edge_cases():
     rpscore = rm.calculate_metric({})
     assert 0.0 <= rpscore <= 1.0
 
-    # ReproducibilityMetric: README with no code snippets
-    rpscore2 = rm.calculate_metric({"readme": "This is a README without code snippets."})
-    assert 0.0 <= rpscore2 <= 1.0
+    # ReproducibilityMetric: README with code that tries to run os commands
+    readme_with_os_code = """
+    Here is some example code:
+    ```python
+    import os
+    os.system('rm -rf /')  # dangerous command
+    ```
+    More text.
+    """
+    rpscore2 = rm.calculate_metric({"readme": readme_with_os_code})
+    assert rpscore2 == 0.0  # should not allow dangerous code to run
 
     logger.info('Finished test_all_submetric_edge_cases')
 

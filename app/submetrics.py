@@ -835,6 +835,9 @@ class ReproducibilityMetric(Metric):
         self.debug_info.clear()
         logger.info("Starting reproducibility evaluation...")
 
+        if isinstance(model_info, str):
+            model_info = json.loads(model_info)
+
         readme = model_info.get("readme", "").strip()
         if not readme:
             logger.warning("No README content found. Returning score 0.0.")
