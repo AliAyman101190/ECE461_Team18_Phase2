@@ -27,4 +27,28 @@ jobs:
       run: mypy app/
     - name: Run tests
       run: |
-        python -m pytest --cov=app --cov-report=term-missing tests/
+        python -m pytest --cov=app --cov-report=term-missing backend/tests/
+
+    - name: Install AWS SAM CLI
+      run: |
+        pip install aws-sam-cli
+
+    - name: Configure AWS credentials
+      uses : aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Build SAM application
+      run: |
+        sam build
+
+    - name: Deploy to AWS
+      run: |
+        sam deploy \
+          --no-confirm-changeset \
+          --no-fail-on-empty-changeset \
+          --stack-name ece30861-team-18-phase-2-stack \
+          --s3-bucket ece30861-team-18-phase-2-artifact-bucket \
+          --capabilities CAPABILITY_IAM
