@@ -882,11 +882,8 @@ class ReproducibilityMetric(Metric):
             code = textwrap.dedent(code).strip()
             if lang in ["python", "py"]:
                 snippets.append(code)
-            elif lang in ["bash", "sh"]:
-                for line in code.splitlines():
-                    if line.strip().startswith(("python ", "python3 ")):
-                        cmd = line.strip().split(" ", 1)[1]
-                        snippets.append(f"import os\nos.system('{cmd}')")
+            else: # we will only accept python snippets for security reasons
+                logger.debug(f"Skipping non-Python snippet in language '{lang}'")
 
         return snippets
 
@@ -953,9 +950,6 @@ class ReproducibilityMetric(Metric):
             except subprocess.TimeoutExpired:
                 logger.warning(f"Snippet #{index} timed out (10s); score = 0.5")
                 return 0.5
-            except Exception as e:
-                logger.error(f"Unexpected exception in snippet #{index}: {e}")
-                return 0.0
 
     # ---------------------------------------------------------
     def calculate_latency(self) -> int:

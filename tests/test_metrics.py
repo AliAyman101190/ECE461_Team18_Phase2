@@ -198,6 +198,50 @@ def test_all_submetric_edge_cases():
     rpscore2 = rm.calculate_metric({"readme": readme_with_os_code})
     assert rpscore2 == 0.0  # should not allow dangerous code to run
 
+    # reproducibility with no code snippets
+    readme_no_code = "This is a README without any code snippets."
+    rpscore3 = rm.calculate_metric({"readme": readme_no_code})
+    assert rpscore3 == 0.0
+
+    # reproducibility with non-python code snippets
+    readme_non_python_code = """
+    Here is some example code:
+    ```bash
+    echo "Hello, World!"
+    ```
+    More text.
+    """
+    rpscore4 = rm.calculate_metric({"readme": readme_non_python_code})
+    assert rpscore4 == 0.0
+
+
+    # reproducibility with python code that runs too long
+    readme_long_code = """
+    Here is some example code:
+    ```python
+    while True:
+        pass  # infinite loop
+    ```
+    More text.
+    """
+    rpscore5 = rm.calculate_metric({"readme": readme_long_code})
+    assert rpscore5 == 0.5
+
+    # reproducibility with python code that throws specific exception
+    readme_error_code ="""
+    Here is some example code with an exception:
+    ```python
+    def do_work():
+    raise ValueError("This is a deliberate exception")
+    
+do_work()
+    ```
+    More text.
+    """
+    rpscore6 = rm.calculate_metric({"readme": readme_error_code})
+    assert rpscore6 == 0.0
+
+
     logger.info('Finished test_all_submetric_edge_cases')
 
 
