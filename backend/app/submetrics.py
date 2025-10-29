@@ -87,7 +87,6 @@ class SizeMetric(Metric):
                 usage = limit_gb / model_size_gb
                 scores[hardware] = usage if usage <= 1.0 else 1.0
 
-
             self._latency = int((time.time() - start_time) * 1000)
             return scores
             
