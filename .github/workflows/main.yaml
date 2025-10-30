@@ -51,4 +51,5 @@ jobs:
           --no-fail-on-empty-changeset \
           --stack-name ece30861-team-18-phase-2-stack \
           --s3-bucket ece30861-team-18-phase-2-artifact-bucket \
-          --capabilities CAPABILITY_IAM
+          --capabilities CAPABILITY_IAM \
+          --parameter-overrides RestApiId=cfehic5hh2

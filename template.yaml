@@ -10,6 +10,13 @@ Globals:
     MemorySize: 512
 
 Resources:
+
+  ExistingRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: ExistingRestApiPlaceholder
+    DeletionPolicy: Retain     # prevents deletion if stack deleted
+
   CreateArtifactFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -23,7 +30,7 @@ Resources:
           Properties:
             Path: /artifact/{artifact_type}            # route on API Gateway
             Method: post                        # HTTP POST method
-            RestApiId: cfehic5hh2
+            RestApiId: !Ref ExistingRestApi
             StageName: dev
       Environment:
         Variables:
@@ -32,4 +39,4 @@ Resources:
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${RestApiId}.execute-api.${AWS::Region}.amazonaws.com/dev/artifact"
+    Value: !Sub "https:/cfehic5hh2.execute-api.${AWS::Region}.amazonaws.com/dev/artifact"
