@@ -122,7 +122,7 @@ Resources:
   CreateArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: create_artifacts_lambda
+      FunctionName: create_artifact_lambda
       Handler: create_artifact_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
       Description: Lambda function to handle artifact creation requests.
