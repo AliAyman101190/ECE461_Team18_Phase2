@@ -201,7 +201,7 @@ Resources:
 
               x-amazon-apigateway-integration:
                 uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ArtifactRetrieve.Arn}/invocations
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetArtifactLambda.Arn}/invocations
                 httpMethod: GET
                 type: aws_proxy
 
@@ -243,7 +243,7 @@ Resources:
 
               x-amazon-apigateway-integration:
                 uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ArtifactUpdate.Arn}/invocations
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateArtifactLambda.Arn}/invocations
                 httpMethod: PUT
                 type: aws_proxy
 
@@ -304,7 +304,7 @@ Resources:
                           #  Integrate with Lambda
             x-amazon-apigateway-integration:
               uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ArtifactDelete.Arn}/invocations
+                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteArtifactLambda.Arn}/invocations
               httpMethod: DELETE
               type: aws_proxy
 
