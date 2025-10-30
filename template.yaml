@@ -31,7 +31,6 @@ Resources:
             Path: /artifact/{artifact_type}            # route on API Gateway
             Method: post                        # HTTP POST method
             RestApiId: !Ref ExistingRestApi
-            StageName: dev
       Environment:
         Variables:
           ENVIRONMENT: dev
