@@ -6,7 +6,7 @@ def lambda_handler(event, context):
         "statusCode": 200,
         "headers": {"Content-Type": "application/json"},
         "body": json.dumps({
-            "message": f"{event['resource']} called successfully from Github actions",
+            "message": f"{event['resource']} called successfully from Github actions 2",
             "method": event['httpMethod'],
             "pathParameters": event.get('pathParameters'),
             "query": event.get('queryStringParameters'),
