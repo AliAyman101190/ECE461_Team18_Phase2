@@ -157,6 +157,12 @@ Resources:
                 in: header
                 required: true
 
+            x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResetRegistryLambda.Arn}/invocations
+                httpMethod: DELETE
+                type: aws_proxy
+
           /artifacts/{artifact_type}/{id}:
             get:
               parameters:
@@ -273,40 +279,40 @@ Resources:
               operationId: ArtifactDelete
               summary: Delete this artifact. (NON-BASELINE)
               description: Delete only the artifact that matches "id". (id is a unique identifier for an artifact)
-            parameters:
-              - examples:
-                  ExampleID:
-                    value: model
-                name: artifact_type
-                description: Artifact type
-                schema:
-                  $ref: "#/components/schemas/ArtifactType"
-                in: path
-                required: true
-              - examples:
-                  ExampleID:
-                    value: 3847247294
-                name: id
-                description: artifact id
-                schema:
-                  $ref: "#/components/schemas/ArtifactID"
-                in: path
-                required: true
-              - examples:
-                  ExampleToken:
-                    value: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
-                name: X-Authorization
-                description: ""
-                schema:
-                  $ref: "#/components/schemas/AuthenticationToken"
-                in: header
-                required: true
-                          #  Integrate with Lambda
-            x-amazon-apigateway-integration:
-              uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteArtifactLambda.Arn}/invocations
-              httpMethod: DELETE
-              type: aws_proxy
+              parameters:
+                - examples:
+                    ExampleID:
+                      value: model
+                  name: artifact_type
+                  description: Artifact type
+                  schema:
+                    $ref: "#/components/schemas/ArtifactType"
+                  in: path
+                  required: true
+                - examples:
+                    ExampleID:
+                      value: 3847247294
+                  name: id
+                  description: artifact id
+                  schema:
+                    $ref: "#/components/schemas/ArtifactID"
+                  in: path
+                  required: true
+                - examples:
+                    ExampleToken:
+                      value: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+                  name: X-Authorization
+                  description: ""
+                  schema:
+                    $ref: "#/components/schemas/AuthenticationToken"
+                  in: header
+                  required: true
+                            #  Integrate with Lambda
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteArtifactLambda.Arn}/invocations
+                httpMethod: DELETE
+                type: aws_proxy
 
           /artifact/{artifact_type}:
             post:
@@ -457,7 +463,26 @@ Resources:
       Environment:
         Variables:
           ENVIRONMENT: dev
+
+  ResetRegistryLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: reset_registry_lambda
+      Handler: reset_registry_lambda.lambda_handler   # file.lambda_handler
+      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+      Description: Lambda function to handle resetting the registry
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /reset         # route on API Gateway
+            Method: delete                        # HTTP DELETE method
+            RestApiId: !Ref ece461Ph2Api
+      Environment:
+        Variables:
+          ENVIRONMENT: dev
+          
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https:/${ece461Ph2Api}.execute-api.${AWS::Region}.amazonaws.com/dev"
+    Value: !Sub "https://${ece461Ph2Api}.execute-api.${AWS::Region}.amazonaws.com/dev"
