@@ -9,6 +9,11 @@ Globals:
     Timeout: 10
     MemorySize: 512
 
+Parameters:
+  ExistingApiId:
+    Type: String
+    Description: "cfehic5hh2"
+
 Resources:
   CreateArtifactFunction:
     Type: AWS::Serverless::Function
@@ -23,7 +28,7 @@ Resources:
           Properties:
             Path: /artifact/{artifact_type}            # route on API Gateway
             Method: POST                        # HTTP POST method
-            RestApiId: cfehic5hh2
+            RestApiId: !Ref ExistingApiId
       Environment:
         Variables:
           ENVIRONMENT: prod
