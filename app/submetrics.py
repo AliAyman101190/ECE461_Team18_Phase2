@@ -835,6 +835,9 @@ class ReproducibilityMetric(Metric):
         self.debug_info.clear()
         logger.info("Starting reproducibility evaluation...")
 
+        if isinstance(model_info, str):
+            model_info = json.loads(model_info)
+
         readme = model_info.get("readme", "").strip()
         if not readme:
             logger.warning("No README content found. Returning score 0.0.")
@@ -877,16 +880,10 @@ class ReproducibilityMetric(Metric):
         for lang, code in matches:
             lang = (lang or "").lower()
             code = textwrap.dedent(code).strip()
-            # Normalize inconsistent indentation
-            code = "\n".join(line.lstrip() for line in code.splitlines())
-
             if lang in ["python", "py"]:
                 snippets.append(code)
-            elif lang in ["bash", "sh"]:
-                for line in code.splitlines():
-                    if line.strip().startswith(("python ", "python3 ")):
-                        cmd = line.strip().split(" ", 1)[1]
-                        snippets.append(f"import os\nos.system('{cmd}')")
+            else: # we will only accept python snippets for security reasons
+                logger.debug(f"Skipping non-Python snippet in language '{lang}'")
 
         return snippets
 
@@ -907,6 +904,9 @@ class ReproducibilityMetric(Metric):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             snippet_path = os.path.join(tmpdir, f"snippet_{index}.py")
+
+            print(f"\n--- Snippet #{index} to be executed ---\n{snippet}\n--------------------------------------\n")
+
             with open(snippet_path, "w", encoding="utf-8") as f:
                 f.write(snippet)
 
@@ -950,9 +950,6 @@ class ReproducibilityMetric(Metric):
             except subprocess.TimeoutExpired:
                 logger.warning(f"Snippet #{index} timed out (10s); score = 0.5")
                 return 0.5
-            except Exception as e:
-                logger.error(f"Unexpected exception in snippet #{index}: {e}")
-                return 0.0
 
     # ---------------------------------------------------------
     def calculate_latency(self) -> int:
@@ -995,7 +992,7 @@ class ReviewedenessMetric(Metric):
         """
         start_time = time.time()
         headers = {"Accept": "application/vnd.github+json"}
-        token = os.getenv("GITHUB_TOKEN")
+        token = os.getenv("TEAM18_GITHUB_TOKEN")
         if token:
             headers["Authorization"] = f"Bearer {token}"
         else:

@@ -38,7 +38,8 @@ class MetricCalculator:
             DatasetQualityMetric(),
             CodeQualityMetric(),
             PerformanceMetric(),
-            ReviewdenessMetric()
+            ReviewedenessMetric(),
+            ReproducibilityMetric(),
         ]
         
         # Configure weights based on Sarah's priorities from spec
@@ -54,10 +55,11 @@ class MetricCalculator:
             "dataset_and_code_score": 0.15,  # High priority - documentation
             "performance_claims": 0.15, # High priority - evidence of quality
             "bus_factor": 0.10,        # Medium priority - maintainability
-            "code_quality": 0.10,      # Medium priority - code standards
-            "dataset_quality": 0.10,   # Medium priority - data quality
+            "code_quality": 0.05,      # Medium priority - code standards
+            "dataset_quality": 0.05,   # Medium priority - data quality
             "size_score": 0.05,        # Lower priority - deployment consideration
-            "reviewedeness": 0.05       # Lower priority "FOR NOW"
+            "reviewedeness": 0.05,     # Lower priority "FOR NOW"
+            "reproducibility": 0.05    # Lower priority "FOR NOW"
         }
         
         for metric in self.metrics:
