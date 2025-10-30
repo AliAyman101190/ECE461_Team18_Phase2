@@ -11,7 +11,7 @@ Globals:
 
 Resources:
 
-  Ece461Ph2Api:
+  ece461Ph2Api:
     Type: AWS::Serverless::Api
     Properties:
       StageName: dev
