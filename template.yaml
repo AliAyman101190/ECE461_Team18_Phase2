@@ -425,7 +425,7 @@ Resources:
   UpdateArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: get_artifact_lambda
+      FunctionName: update_artifact_lambda
       Handler: update_artifact_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
       Description: Lambda function to handle updating artifact with {id}
