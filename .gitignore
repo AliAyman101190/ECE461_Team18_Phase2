@@ -24,7 +24,6 @@ local/
 # Temp files
 app/temp*
 app/tmp*
-temp*
 tmp*
 
 # Coverage files

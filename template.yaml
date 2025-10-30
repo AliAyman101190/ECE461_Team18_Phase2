@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ECE30861 Team 18 Phase 2 - Serverless Application
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 10
+    MemorySize: 512
+
+Resources:
+  CreateArtifactFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: create_artifact
+      Handler: create_artifact_lambda.lambda_handler   # file.lambda_handler
+      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+      Description: Lambda function to handle artifact creation requests.
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /artifact/{artifact_type}            # route on API Gateway
+            Method: POST                        # HTTP POST method
+            RestApiId: cfehic5hh2
+      Environment:
+        Variables:
+          ENVIRONMENT: prod
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${RestApiId}.execute-api.${AWS::Region}.amazonaws.com/Prod/artifact"
