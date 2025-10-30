@@ -27,11 +27,11 @@ Resources:
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
 
-  CreateArtifactLambda:
+  CreateArtifactsLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: create_artifact_lambda
-      Handler: create_artifact_lambda.lambda_handler   # file.lambda_handler
+      FunctionName: create_artifacts_lambda
+      Handler: create_artifacts_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
       Description: Lambda function to handle artifact creation requests.
       Events:
