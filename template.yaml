@@ -62,6 +62,81 @@ Resources:
                       format: uri
 
         paths:
+          /artifacts:
+            post:
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/ArtifactQuery"
+                required: true
+              parameters:
+                - name: offset
+                  description:
+                    "Provide this for pagination. If not provided, returns the first\
+                    \ page of results."
+                  schema:
+                    $ref: "#/components/schemas/EnumerateOffset"
+                  in: query
+                  required: false
+
+                - name: X-Authorization
+                  in: header
+                  required: true
+                  description: Authentication header
+                  schema:
+                    $ref: "#/components/schemas/AuthenticationToken"
+
+              responses:
+                "200":
+                  headers:
+                    offset:
+                      schema:
+                        $ref: "#/components/schemas/EnumerateOffset"
+                      examples:
+                        ExampleRequest:
+                          value: "3"
+                  content:
+                    application/json:
+                      schema:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ArtifactMetadata"
+                      examples:
+                        ExampleResponse:
+                          value:
+                            - name: audience-classifier
+                              id: 3847247294
+                              type: model
+                            - name: bookcorpus
+                              id: 5738291045
+                              type: dataset
+                            - name: google-research-bert
+                              id: 9182736455
+                              type: code
+                  description: List of artifacts
+                "400":
+                  description: "There is missing field(s) in the artifact_query or it is formed improperly, or is invalid."
+                "403":
+                  description: Authentication failed due to invalid or missing AuthenticationToken.
+                "413":
+                  description: Too many artifacts returned.
+              operationId: ArtifactsList
+              summary: Get the artifacts from the registry. (BASELINE)
+              description: |-
+                Get any artifacts fitting the query.
+                Search for artifacts satisfying the indicated query.
+                If you want to enumerate all artifacts, provide an array with a single artifact_query whose name is "*". The response is paginated; the response header includes the offset to use in the next query.
+
+              #  Integrate with Lambda
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListArtifactsLambda.Arn}/invocations
+                httpMethod: POST
+                type: aws_proxy
+
           /artifact/{artifact_type}:
             post:
               operationId: ArtifactCreate
@@ -112,6 +187,8 @@ Resources:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateArtifactLambda.Arn}/invocations
                 httpMethod: POST
                 type: aws_proxy
+
+            
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
@@ -138,23 +215,23 @@ Resources:
         Variables:
           ENVIRONMENT: dev
 
-  # CreateArtifactsLambda:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     FunctionName: create_artifacts_lambda
-  #     Handler: create_artifacts_lambda.lambda_handler   # file.lambda_handler
-  #     CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
-  #     Description: Lambda function to handle artifact creation requests.
-  #     Events:
-  #       ApiEvent:
-  #         Type: Api
-  #         Properties:
-  #           Path: /artifact/{artifact_type}            # route on API Gateway
-  #           Method: post                        # HTTP POST method
-  #           RestApiId: !Ref ece461Ph2Api
-  #     Environment:
-  #       Variables:
-  #         ENVIRONMENT: dev
+  ListArtifactsLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: list_artifacts_lambda
+      Handler: list_artifacts_lambda.lambda_handler   # file.lambda_handler
+      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+      Description: Lambda function to handle listing all the artifacts
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /artifacts            # route on API Gateway
+            Method: post                        # HTTP POST method
+            RestApiId: !Ref ece461Ph2Api
+      Environment:
+        Variables:
+          ENVIRONMENT: dev
 
 Outputs:
   ApiEndpoint:
