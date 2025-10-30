@@ -11,21 +11,113 @@ Globals:
 
 Resources:
 
-  # ExistingRestApi:
-  #   Type: AWS::ApiGateway::RestApi
-  #   Properties:
-  #     Name: ExistingRestApiPlaceholder
-  #   DeletionPolicy: Retain  # prevents deletion if stack deleted
-
-  ece461Ph2Api:
+  Ece461Ph2Api:
     Type: AWS::Serverless::Api
     Properties:
       StageName: dev
-      Description: API Gateway for ECE461 phase 2 project
+      Description: ECE461 Phase 2 API Gateway (OpenAPI Spec)
+      DefinitionBody:
+        openapi: 3.0.2
+        info:
+          title: ECE461 Phase 2 API
+          version: 3.3.1
+
+        components:
+          schemas:
+            #  Types and Models
+            ArtifactType:
+              type: string
+              enum: [model, dataset, code]
+
+            AuthenticationToken:
+              type: string
+              description: Authorization token passed via X-Authorization header.
+
+            ArtifactData:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+
+            Artifact:
+              type: object
+              required: [metadata, data]
+              properties:
+                metadata:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    id:
+                      type: integer
+                    type:
+                      $ref: "#/components/schemas/ArtifactType"
+                data:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                      format: uri
+
+        paths:
+          /artifact/{artifact_type}:
+            post:
+              operationId: ArtifactCreate
+              summary: Register a new artifact. (BASELINE)
+              description: >
+                Register a new artifact by providing a downloadable source URL.
+                Artifacts may share a name with existing entries.
+              parameters:
+                - name: artifact_type
+                  in: path
+                  required: true
+                  description: Type of artifact being ingested.
+                  schema:
+                    $ref: "#/components/schemas/ArtifactType"
+
+                - name: X-Authorization
+                  in: header
+                  required: true
+                  description: Authentication header
+                  schema:
+                    $ref: "#/components/schemas/AuthenticationToken"
+
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/ArtifactData"
+              responses:
+                "201":
+                  description: Success. Check the id in the returned metadata for the official ID.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Artifact"
+                "400":
+                  description: There is missing field(s) in the artifact_data or it is formed improperly (must include a single URL).
+                "403":
+                  description: Authentication failed due to invalid or missing AuthenticationToken.
+                "409":
+                  description: Artifact exists already.
+                "424":
+                  description: Artifact is not registered due to disqualified rating.
+
+              #  Integrate with Lambda
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateArtifactLambda.Arn}/invocations
+                httpMethod: POST
+                type: aws_proxy
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
+
+
 
   CreateArtifactLambda:
     Type: AWS::Serverless::Function
@@ -41,6 +133,7 @@ Resources:
             Path: /artifact/{artifact_type}            # route on API Gateway
             Method: post                        # HTTP POST method
             RestApiId: !Ref ece461Ph2Api
+
       Environment:
         Variables:
           ENVIRONMENT: dev
