@@ -17,7 +17,7 @@ Resources:
   #     Name: ExistingRestApiPlaceholder
   #   DeletionPolicy: Retain     # prevents deletion if stack deleted
 
-  ece461Ph2_Api:
+  ece461Ph2Api:
     Type: AWS::Serverless::Api
     Properties:
       StageName: dev
@@ -40,7 +40,7 @@ Resources:
           Properties:
             Path: /artifact/{artifact_type}            # route on API Gateway
             Method: post                        # HTTP POST method
-            RestApiId: !Ref ece461Ph2_Api
+            RestApiId: !Ref ece461Ph2Api
       Environment:
         Variables:
           ENVIRONMENT: dev
@@ -48,4 +48,4 @@ Resources:
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https:/${ece461Ph2_Api}.execute-api.${AWS::Region}.amazonaws.com/dev/artifact"
+    Value: !Sub "https:/${ece461Ph2Api}.execute-api.${AWS::Region}.amazonaws.com/dev/artifact"
