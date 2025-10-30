@@ -17,16 +17,15 @@ Resources:
   #     Name: ExistingRestApiPlaceholder
   #   DeletionPolicy: Retain     # prevents deletion if stack deleted
 
-  ece461_ph2_api:
-    ArtifactApi:
-      Type: AWS::Serverless::Api
-      Properties:
-        StageName: dev
-        Description: API Gateway for ECE461 phase 2 project
-        Cors:
-          AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
-          AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-          AllowOrigin: "'*'"
+  ece461Ph2_Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Description: API Gateway for ECE461 phase 2 project
+      Cors:
+        AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
 
   CreateArtifactLambda:
     Type: AWS::Serverless::Function
@@ -41,7 +40,7 @@ Resources:
           Properties:
             Path: /artifact/{artifact_type}            # route on API Gateway
             Method: post                        # HTTP POST method
-            RestApiId: !Ref ece461_ph2_api
+            RestApiId: !Ref ece461Ph2_Api
       Environment:
         Variables:
           ENVIRONMENT: dev
@@ -49,4 +48,4 @@ Resources:
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https:/${ece461_ph2_api}.execute-api.${AWS::Region}.amazonaws.com/dev/artifact"
+    Value: !Sub "https:/${ece461Ph2_Api}.execute-api.${AWS::Region}.amazonaws.com/dev/artifact"
