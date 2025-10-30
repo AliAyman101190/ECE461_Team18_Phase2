@@ -27,11 +27,11 @@ Resources:
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
 
-  CreateArtifactsLambda:
+  CreateArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: create_artifacts_lambda
-      Handler: create_artifacts_lambda.lambda_handler   # file.lambda_handler
+      Handler: create_artifact_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
       Description: Lambda function to handle artifact creation requests.
       Events:
@@ -44,6 +44,24 @@ Resources:
       Environment:
         Variables:
           ENVIRONMENT: dev
+
+  # CreateArtifactsLambda:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: create_artifacts_lambda
+  #     Handler: create_artifacts_lambda.lambda_handler   # file.lambda_handler
+  #     CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+  #     Description: Lambda function to handle artifact creation requests.
+  #     Events:
+  #       ApiEvent:
+  #         Type: Api
+  #         Properties:
+  #           Path: /artifact/{artifact_type}            # route on API Gateway
+  #           Method: post                        # HTTP POST method
+  #           RestApiId: !Ref ece461Ph2Api
+  #     Environment:
+  #       Variables:
+  #         ENVIRONMENT: dev
 
 Outputs:
   ApiEndpoint:
