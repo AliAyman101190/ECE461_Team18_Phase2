@@ -1,7 +1,7 @@
 # We'll use this file for the CI/CD pipeline in milestone 2
 name: main pipeline
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
