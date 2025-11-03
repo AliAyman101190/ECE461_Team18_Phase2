@@ -16,7 +16,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.13'
 
     - name: Install dependencies
       run: |
@@ -29,6 +29,8 @@ jobs:
       run: |
         python -m pytest --cov=app --cov-report=term-missing backend/tests/
 
+
+## CD
     - name: Install AWS SAM CLI
       run: |
         pip install aws-sam-cli
@@ -49,6 +51,6 @@ jobs:
         sam deploy \
           --no-confirm-changeset \
           --no-fail-on-empty-changeset \
-          --stack-name ece30861-team-18-phase-2-stack \
-          --s3-bucket ece30861-team-18-phase-2-artifact-bucket \
+          --stack-name ece461-team-18-phase-2-stack \
+          --resolve-s3 \
           --capabilities CAPABILITY_IAM
