@@ -13,3 +13,13 @@ The Reproducibility Metric evaluates whether example code snippets provided in a
 ###### Security measures
 
 To ensure the metric runs safely, each code snippet is executed within a temporary, sandboxed environment using strict controls. The system prohibits execution of unsafe operations such as file I/O, network access, subprocess calls, or use of eval and exec. All snippets are written to short-lived temporary directories that are automatically cleaned up after execution. Additionally, timeouts are enforced to prevent long-running or hanging processes, and only Python code is evaluated. These measures ensure that the reproducibility analysis cannot compromise the host environment or access external resources, while still providing accurate feedback on the quality and reliability of code examples.
+
+#### Reviewedeness metric
+
+###### How it works
+
+The ReviewedenessMetric estimates what portion of a repository’s merged pull requests went through code review. It queries the GitHub API for closed PRs, filters for those that were merged, and then counts how many had review comments or assigned reviewers. The ratio of reviewed-to-total merged PRs becomes the metric value, clamped between 0 and 1.
+
+###### Design rationale
+
+We use merged PRs as a proxy for code introduction since they reflect actual code integrated into the main branch. Checking for review comments or requested reviewers provides a lightweight but practical signal of peer review activity without requiring commit-level diff analysis. Returning -1 for missing repos and caching latency helps keep results consistent with the project’s metric spec and performance monitoring design.
