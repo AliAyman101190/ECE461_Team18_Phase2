@@ -30,6 +30,10 @@ def lambda_handler(event, context):
     # Standard API Gateway–style response
     return {
         "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
+            "Access-Control-Allow-Headers": "Content-Type"
+        },
         "body": json.dumps(fake_models)
     }
