@@ -9,11 +9,6 @@ Globals:
     Timeout: 10
     MemorySize: 512
 
-Parameters:
-  ExistingApiId:
-    Type: String
-    Description: "cfehic5hh2"
-
 Resources:
 
   ece461Ph2Api:
