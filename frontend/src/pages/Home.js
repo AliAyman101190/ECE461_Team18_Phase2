@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import "../App.css";
+const API_URL = "https://cfehic5hh2.execute-api.us-east-2.amazonaws.com/dev/artifacts"
 
 function Home() {
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("https://cfehic5hh2.execute-api.us-east-2.amazonaws.com/dev/artifacts")
+    fetch(API_URL)
       .then((res) => res.json())
       .then((data) => {
         setModels(data);
