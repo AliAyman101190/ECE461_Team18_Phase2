@@ -42,14 +42,7 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/ingest" element={
-            <main className="content">
-              <div className="card">
-                {/* existing ingestion form content here */}
-                {/* (don’t remove your form code; just wrap it like this) */}
-              </div>
-            </main>
-          } />
+          <Route path="/ingest" element={<Ingest />} />
         </Routes>
 
         <footer className="footer">
