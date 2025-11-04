@@ -6,7 +6,6 @@ function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: replace with your backend URL
     fetch("https://cfehic5hh2.execute-api.us-east-2.amazonaws.com/dev/artifacts")
       .then((res) => res.json())
       .then((data) => {
