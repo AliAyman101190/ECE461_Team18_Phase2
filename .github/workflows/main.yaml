@@ -24,14 +24,7 @@ jobs:
         python -m pip install -r backend/requirements.txt
 
     - name: Run MyPy
-      run: |
-        mypy backend/app/ \
-          --python-version=3.11 \
-          --exclude 'backend/app/handlers/(psycopg2|pymysql)/' \
-          --ignore-missing-imports \
-          --warn-return-any \
-          --warn-unused-ignores \
-          --disallow-untyped-defs
+      run: mypy backend/app/
     - name: Run tests
       run: |
         python -m pytest --cov=app --cov-report=term-missing backend/tests/
