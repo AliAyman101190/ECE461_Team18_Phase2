@@ -1,20 +1,25 @@
-# This file is used to list dependencies for the project
-# Run 'pip install -r requirements.txt' to install them
-pytest
-numpy
-pandas
-python-dotenv
-huggingface_hub
-# git-python # may be useful for interacting with Git repositories (cloning and assessing)
-mypy
-pytest
-pytest-cov
-requests
-types-requests
-psycopg2-binary
+# Core dependencies
 boto3
 botocore
+psycopg2-binary
+requests
+numpy
+pandas
+
+# Optional: Only if you're using pymysql anywhere
+pymysql
+
+# Dev & Testing
+pytest
+pytest-cov
+mypy
+types-requests
 types-boto3
 types-botocore
 types-psycopg2
 types-cryptography
+python-dotenv
+huggingface_hub
+
+# Optional: better structured Lambda utilities
+aws-lambda-powertools
