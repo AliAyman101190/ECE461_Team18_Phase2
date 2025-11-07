@@ -18,4 +18,3 @@ types-boto3
 types-botocore
 types-psycopg2
 types-cryptography
-types-PyNaCl
