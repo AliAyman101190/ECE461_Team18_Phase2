@@ -11,11 +11,16 @@ Globals:
     Environment:
       Variables:
         ENVIRONMENT: dev
-        DB_HOST: team18-phase2-database.cuvgicoyg2el.us-east-1.rds.amazonaws.com
-        DB_PORT: 5432
-        DB_NAME: Team18_Model_Registry
-        DB_USER: Team18
-        DB_PASSWORD: ElwaAsteroidFoob18
+        SECRET_NAME: team18/DB_CREDS
+        AWS_REGION: us-east-1
+    Policies:
+      - AWSLambdaBasicExecutionRole
+      - Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:team18/DB_CREDS-*
+
 
 Resources:
 
