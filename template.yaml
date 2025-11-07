@@ -13,7 +13,7 @@ Globals:
         ENVIRONMENT: dev
         DB_HOST: team18-phase2-database.cuvgicoyg2el.us-east-1.rds.amazonaws.com
         DB_PORT: 5432
-        DB_NAME: team18-phase2-database
+        DB_NAME: Team18_Model_Registry
         DB_USER: Team18
         DB_PASSWORD: ElwaAsteroidFoob18
 

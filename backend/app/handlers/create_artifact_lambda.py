@@ -1,30 +1,38 @@
 import json
+from rds_connection import run_query
 
 def lambda_handler(event, context):
-    """
-    Lambda function that returns all incoming request data for debugging and inspection.
-    Works with AWS_PROXY integration from API Gateway.
-    """
+    try:
+        # Parse input body
+        body = json.loads(event.get("body", "{}"))
+        artifact_type = event["pathParameters"]["artifact_type"]
+        url = body.get("url")
 
-    # Log the raw event to CloudWatch
-    print(json.dumps(event, indent=2))
+        if not url:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "Missing 'url' in request body"})
+            }
 
-    # Prepare response data (just return the whole event)
-    response_body = {
-        "message": "Request received successfully",
-        "method": event.get("httpMethod"),
-        "path": event.get("path"),
-        "headers": event.get("headers"),
-        "queryStringParameters": event.get("queryStringParameters"),
-        "pathParameters": event.get("pathParameters"),
-        "body": event.get("body"),
-        "stageVariables": event.get("stageVariables"),
-        "requestContext": event.get("requestContext"),
-    }
+        # Insert into database
+        query = """
+        INSERT INTO artifacts (type, url)
+        VALUES (%s, %s)
+        RETURNING id, type, url, created_at;
+        """
+        result = run_query(query, (artifact_type, url), fetch=True)[0]
 
-    # Return everything in JSON
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps(response_body, indent=2)
-    }
+        return {
+            "statusCode": 201,
+            "body": json.dumps({
+                "message": "Artifact created successfully!",
+                "artifact": result
+            })
+        }
+
+    except Exception as e:
+        print("❌ Error:", str(e))
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }

@@ -1,39 +1,39 @@
 import json
-from datetime import datetime
+from rds_connection import run_query
+
 
 def lambda_handler(event, context):
-    # Simulated data
-    fake_models = [
-        {
-            "id": "bert-001",
-            "name": "bert-base-cased",
-            "submittedBy": "Ali",
-            "status": "Ingested",
-            "dateAdded": datetime.utcnow().isoformat() + "Z"
-        },
-        {
-            "id": "gpt2-002",
-            "name": "gpt2-small",
-            "submittedBy": "John",
-            "status": "Pending",
-            "dateAdded": datetime.utcnow().isoformat() + "Z"
-        },
-        {
-            "id": "falcon-003",
-            "name": "falcon-7b-instruct",
-            "submittedBy": "Abdul",
-            "status": "Ingested",
-            "dateAdded": datetime.utcnow().isoformat() + "Z"
-        }
-    ]
+    """Return a list of all artifacts stored in the database."""
 
-    # Standard API Gateway–style response
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
-            "Access-Control-Allow-Headers": "Content-Type"
-        },
-        "body": json.dumps(fake_models)
-    }
+    print("Incoming event:", json.dumps(event, indent=2))
+
+    try:
+        # --- Optional: in the future you can parse filters from the event["body"] or query params ---
+        # For now, just fetch everything
+        sql = """
+        SELECT id, type, url, created_at
+        FROM artifacts
+        ORDER BY created_at DESC;
+        """
+        artifacts = run_query(sql, fetch=True) or []
+
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
+                "Access-Control-Allow-Headers": "Content-Type"
+            },
+            "body": json.dumps({
+                "count": len(artifacts),
+                "artifacts": artifacts
+            }, default=str)
+        }
+
+    except Exception as e:
+        print("❌ Error listing artifacts:", e)
+        return {
+            "statusCode": 500,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"error": str(e)})
+        }

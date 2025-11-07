@@ -1,30 +1,75 @@
 import json
+from rds_connection import run_query
+
 
 def lambda_handler(event, context):
-    """
-    Lambda function that returns all incoming request data for debugging and inspection.
-    Works with AWS_PROXY integration from API Gateway.
-    """
+    """Update an artifact's data (e.g., URL) in the database."""
 
-    # Log the raw event to CloudWatch
-    print(json.dumps(event, indent=2))
+    print("Incoming event:", json.dumps(event, indent=2))
 
-    # Prepare response data (just return the whole event)
-    response_body = {
-        "message": "Request received successfully",
-        "method": event.get("httpMethod"),
-        "path": event.get("path"),
-        "headers": event.get("headers"),
-        "queryStringParameters": event.get("queryStringParameters"),
-        "pathParameters": event.get("pathParameters"),
-        "body": event.get("body"),
-        "stageVariables": event.get("stageVariables"),
-        "requestContext": event.get("requestContext"),
-    }
+    # --- Extract path parameters ---
+    path_params = event.get("pathParameters") or {}
+    artifact_type = path_params.get("artifact_type")
+    artifact_id = path_params.get("id")
 
-    # Return everything in JSON
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps(response_body, indent=2)
-    }
+    if not artifact_type or not artifact_id:
+        return {
+            "statusCode": 400,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"error": "Missing artifact_type or id in path"})
+        }
+
+    # --- Parse body (new data) ---
+    try:
+        body = json.loads(event.get("body", "{}"))
+        new_url = body.get("url")
+
+        if not new_url:
+            return {
+                "statusCode": 400,
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"error": "Missing 'url' in request body"})
+            }
+
+    except json.JSONDecodeError:
+        return {
+            "statusCode": 400,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"error": "Invalid JSON in request body"})
+        }
+
+    # --- Perform update in the database ---
+    try:
+        sql = """
+        UPDATE artifacts
+        SET url = %s
+        WHERE id = %s AND type = %s
+        RETURNING id, type, url, created_at;
+        """
+        result = run_query(sql, (new_url, artifact_id, artifact_type), fetch=True)
+
+        if not result:
+            return {
+                "statusCode": 404,
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"message": "Artifact not found"})
+            }
+
+        updated_artifact = result[0]
+
+        return {
+            "statusCode": 200,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({
+                "message": "Artifact updated successfully!",
+                "artifact": updated_artifact
+            }, default=str)
+        }
+
+    except Exception as e:
+        print("❌ Error updating artifact:", e)
+        return {
+            "statusCode": 500,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"error": str(e)})
+        }

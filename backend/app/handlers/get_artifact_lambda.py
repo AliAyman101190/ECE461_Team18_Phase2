@@ -1,30 +1,55 @@
 import json
+from rds_connection import run_query
+
 
 def lambda_handler(event, context):
-    """
-    Lambda function that returns all incoming request data for debugging and inspection.
-    Works with AWS_PROXY integration from API Gateway.
-    """
+    """Retrieve an artifact by its ID and type from the database."""
 
-    # Log the raw event to CloudWatch
-    print(json.dumps(event, indent=2))
+    print("Incoming event:", json.dumps(event, indent=2))
 
-    # Prepare response data (just return the whole event)
-    response_body = {
-        "message": "Request received successfully",
-        "method": event.get("httpMethod"),
-        "path": event.get("path"),
-        "headers": event.get("headers"),
-        "queryStringParameters": event.get("queryStringParameters"),
-        "pathParameters": event.get("pathParameters"),
-        "body": event.get("body"),
-        "stageVariables": event.get("stageVariables"),
-        "requestContext": event.get("requestContext"),
-    }
+    # --- Extract parameters from URL path ---
+    path_params = event.get("pathParameters") or {}
+    artifact_type = path_params.get("artifact_type")
+    artifact_id = path_params.get("id")
 
-    # Return everything in JSON
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps(response_body, indent=2)
-    }
+    if not artifact_type or not artifact_id:
+        return {
+            "statusCode": 400,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"error": "Missing artifact_type or id in path"})
+        }
+
+    # --- Fetch from database ---
+    try:
+        sql = """
+        SELECT id, type, url, created_at
+        FROM artifacts
+        WHERE id = %s AND type = %s;
+        """
+        results = run_query(sql, (artifact_id, artifact_type), fetch=True)
+
+        if not results:
+            return {
+                "statusCode": 404,
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"message": "Artifact not found"})
+            }
+
+        artifact = results[0]
+
+        return {
+            "statusCode": 200,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({
+                "message": "Artifact retrieved successfully",
+                "artifact": artifact
+            }, default=str)
+        }
+
+    except Exception as e:
+        print("❌ Error fetching artifact:", e)
+        return {
+            "statusCode": 500,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"error": str(e)})
+        }
