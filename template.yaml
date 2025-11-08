@@ -11,19 +11,14 @@ Globals:
     Environment:
       Variables:
         ENVIRONMENT: dev
-        SECRET_NAME: team18/DB_CREDS
+        SECRET_NAME: DB_CREDS
         AWS_REGION: us-east-1
-    Policies:
-      - AWSLambdaBasicExecutionRole
-      - Statement:
-          - Effect: Allow
-            Action:
-              - secretsmanager:GetSecretValue
-            Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:team18/DB_CREDS-*
-
 
 Resources:
 
+  #########################################################
+  # API Gateway
+  #########################################################
   ece461Ph2Api:
     Type: AWS::Serverless::Api
     Properties:
@@ -37,7 +32,6 @@ Resources:
 
         components:
           schemas:
-            #  Types and Models
             ArtifactType:
               type: string
               enum: [model, dataset, code]
@@ -77,73 +71,18 @@ Resources:
         paths:
           /artifacts:
             post:
-              requestBody:
-                content:
-                  application/json:
-                    schema:
-                      type: array
-                      items:
-                        $ref: "#/components/schemas/ArtifactQuery"
-                required: true
+              operationId: ArtifactsList
+              summary: Get artifacts
+              description: Get artifacts matching the query.
               parameters:
-                - name: offset
-                  description:
-                    "Provide this for pagination. If not provided, returns the first\
-                    \ page of results."
-                  schema:
-                    $ref: "#/components/schemas/EnumerateOffset"
-                  in: query
-                  required: false
-
                 - name: X-Authorization
                   in: header
                   required: true
-                  description: Authentication header
                   schema:
                     $ref: "#/components/schemas/AuthenticationToken"
-
               responses:
                 "200":
-                  headers:
-                    offset:
-                      schema:
-                        $ref: "#/components/schemas/EnumerateOffset"
-                      examples:
-                        ExampleRequest:
-                          value: "3"
-                  content:
-                    application/json:
-                      schema:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/ArtifactMetadata"
-                      examples:
-                        ExampleResponse:
-                          value:
-                            - name: audience-classifier
-                              id: 3847247294
-                              type: model
-                            - name: bookcorpus
-                              id: 5738291045
-                              type: dataset
-                            - name: google-research-bert
-                              id: 9182736455
-                              type: code
                   description: List of artifacts
-                "400":
-                  description: "There is missing field(s) in the artifact_query or it is formed improperly, or is invalid."
-                "403":
-                  description: Authentication failed due to invalid or missing AuthenticationToken.
-                "413":
-                  description: Too many artifacts returned.
-              operationId: ArtifactsList
-              summary: Get the artifacts from the registry. (BASELINE)
-              description: |-
-                Get any artifacts fitting the query.
-                Search for artifacts satisfying the indicated query.
-                If you want to enumerate all artifacts, provide an array with a single artifact_query whose name is "*". The response is paginated; the response header includes the offset to use in the next query.
-
-              #  Integrate with Lambda
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListArtifactsLambda.Arn}/invocations
@@ -152,72 +91,39 @@ Resources:
 
           /reset:
             delete:
-              responses:
-                "200":
-                  description: Registry is reset.
-                "401":
-                  description: You do not have permission to reset the registry.
-                "403":
-                  description: Authentication failed due to invalid or missing AuthenticationToken.
               operationId: RegistryReset
-              summary: Reset the registry. (BASELINE)
-              description: Reset the registry to a system default state.
+              summary: Reset the registry
+              description: Reset registry to default state.
               parameters:
                 - name: X-Authorization
-                  description: ""
-                  schema:
-                    $ref: "#/components/schemas/AuthenticationToken"
                   in: header
                   required: true
-
+                  schema:
+                    $ref: "#/components/schemas/AuthenticationToken"
+              responses:
+                "200":
+                  description: Registry is reset
               x-amazon-apigateway-integration:
-                  uri:
-                    Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResetRegistryLambda.Arn}/invocations
-                  httpMethod: DELETE
-                  type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResetRegistryLambda.Arn}/invocations
+                httpMethod: DELETE
+                type: aws_proxy
 
           /artifacts/{artifact_type}/{id}:
             get:
+              operationId: ArtifactRetrieve
+              summary: Retrieve artifact
+              description: Get artifact by ID.
               parameters:
                 - name: artifact_type
-                  description: Type of artifact to fetch
-                  schema:
-                    $ref: "#/components/schemas/ArtifactType"
                   in: path
                   required: true
                 - name: id
-                  description: id of artifact to fetch
-                  schema:
-                    $ref: "#/components/schemas/ArtifactID"
                   in: path
                   required: true
               responses:
                 "200":
-                  content:
-                    application/json:
-                      schema:
-                        $ref: "#/components/schemas/Artifact"
-                      examples:
-                        ExampleResponse:
-                          value:
-                            metadata:
-                              name: openai-whisper
-                              id: 7364518290
-                              type: code
-                            data:
-                              url: https://github.com/openai/whisper
-                  description: Return the artifact. url is required.
-                "400":
-                  description: "There is missing field(s) in the artifact_type or artifact_id or it is formed improperly, or is invalid."
-                "403":
-                  description: Authentication failed due to invalid or missing AuthenticationToken.
-                "404":
-                  description: Artifact does not exist.
-
-              operationId: ArtifactRetrieve
-              summary: Interact with the artifact with this id. (BASELINE)
-              description: Return this artifact.
-
+                  description: Artifact found
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetArtifactLambda.Arn}/invocations
@@ -225,41 +131,19 @@ Resources:
                 type: aws_proxy
 
             put:
-              requestBody:
-                content:
-                  application/json:
-                    schema:
-                      $ref: "#/components/schemas/Artifact"
-                required: true
+              operationId: ArtifactUpdate
+              summary: Update artifact
+              description: Update artifact contents.
               parameters:
                 - name: artifact_type
-                  description: Type of artifact to update
-                  schema:
-                    $ref: "#/components/schemas/ArtifactType"
                   in: path
                   required: true
                 - name: id
-                  description: artifact id
-                  schema:
-                    $ref: "#/components/schemas/ArtifactID"
                   in: path
                   required: true
               responses:
                 "200":
-                  description: Artifact is updated.
-                "400":
-                  description: "There is missing field(s) in the artifact_type or artifact_id or it is formed improperly, or is invalid."
-                "403":
-                  description: Authentication failed due to invalid or missing AuthenticationToken.
-                "404":
-                  description: Artifact does not exist.
-              operationId: ArtifactUpdate
-              summary: Update this content of the artifact. (BASELINE)
-              description: |-
-                The name and id must match.
-
-                The artifact source (from artifact_data) will replace the previous contents.
-
+                  description: Artifact updated
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateArtifactLambda.Arn}/invocations
@@ -267,60 +151,19 @@ Resources:
                 type: aws_proxy
 
             delete:
+              operationId: ArtifactDelete
+              summary: Delete artifact
+              description: Delete artifact by ID.
               parameters:
                 - name: artifact_type
-                  description: Type of artifact to delete
-                  schema:
-                    $ref: "#/components/schemas/ArtifactType"
                   in: path
                   required: true
                 - name: id
-                  description: artifact id
-                  schema:
-                    $ref: "#/components/schemas/ArtifactID"
                   in: path
                   required: true
               responses:
                 "200":
-                  description: Artifact is deleted.
-                "400":
-                  description: "There is missing field(s) in the artifact_type or artifact_id or invalid"
-                "403":
-                  description: Authentication failed due to invalid or missing AuthenticationToken.
-                "404":
-                  description: Artifact does not exist.
-              operationId: ArtifactDelete
-              summary: Delete this artifact. (NON-BASELINE)
-              description: Delete only the artifact that matches "id". (id is a unique identifier for an artifact)
-              parameters:
-                - examples:
-                    ExampleID:
-                      value: model
-                  name: artifact_type
-                  description: Artifact type
-                  schema:
-                    $ref: "#/components/schemas/ArtifactType"
-                  in: path
-                  required: true
-                - examples:
-                    ExampleID:
-                      value: 3847247294
-                  name: id
-                  description: artifact id
-                  schema:
-                    $ref: "#/components/schemas/ArtifactID"
-                  in: path
-                  required: true
-                - examples:
-                    ExampleToken:
-                      value: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
-                  name: X-Authorization
-                  description: ""
-                  schema:
-                    $ref: "#/components/schemas/AuthenticationToken"
-                  in: header
-                  required: true
-                            #  Integrate with Lambda
+                  description: Artifact deleted
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteArtifactLambda.Arn}/invocations
@@ -330,170 +173,158 @@ Resources:
           /artifact/{artifact_type}:
             post:
               operationId: ArtifactCreate
-              summary: Register a new artifact. (BASELINE)
-              description: >
-                Register a new artifact by providing a downloadable source URL.
-                Artifacts may share a name with existing entries.
+              summary: Register new artifact
+              description: Register new artifact by providing a URL.
               parameters:
                 - name: artifact_type
                   in: path
                   required: true
-                  description: Type of artifact being ingested.
-                  schema:
-                    $ref: "#/components/schemas/ArtifactType"
-
                 - name: X-Authorization
                   in: header
                   required: true
-                  description: Authentication header
-                  schema:
-                    $ref: "#/components/schemas/AuthenticationToken"
-
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: "#/components/schemas/ArtifactData"
               responses:
                 "201":
-                  description: Success. Check the id in the returned metadata for the official ID.
-                  content:
-                    application/json:
-                      schema:
-                        $ref: "#/components/schemas/Artifact"
-                "400":
-                  description: There is missing field(s) in the artifact_data or it is formed improperly (must include a single URL).
-                "403":
-                  description: Authentication failed due to invalid or missing AuthenticationToken.
-                "409":
-                  description: Artifact exists already.
-                "424":
-                  description: Artifact is not registered due to disqualified rating.
-
-              #  Integrate with Lambda
+                  description: Artifact created
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateArtifactLambda.Arn}/invocations
                 httpMethod: POST
                 type: aws_proxy
 
-            
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
 
-##### LAMBDA FUNCTIONS
+  #########################################################
+  # LAMBDA FUNCTIONS
+  #########################################################
 
   CreateArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: create_artifact_lambda
-      Handler: create_artifact_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
-      Description: Lambda function to handle artifact creation requests.
+      Handler: create_artifact_lambda.lambda_handler
+      CodeUri: ./backend/app/handlers
+      Description: Lambda for creating artifacts
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /artifact/{artifact_type}            # route on API Gateway
-            Method: post                        # HTTP POST method
+            Path: /artifact/{artifact_type}
+            Method: post
             RestApiId: !Ref ece461Ph2Api
-
-      Environment:
-        Variables:
-          ENVIRONMENT: dev
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
 
   ListArtifactsLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: list_artifacts_lambda
-      Handler: list_artifacts_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
-      Description: Lambda function to handle listing all the artifacts
+      Handler: list_artifacts_lambda.lambda_handler
+      CodeUri: ./backend/app/handlers
+      Description: Lambda for listing artifacts
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /artifacts            # route on API Gateway
-            Method: post                        # HTTP POST method
+            Path: /artifacts
+            Method: post
             RestApiId: !Ref ece461Ph2Api
-      Environment:
-        Variables:
-          ENVIRONMENT: dev
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
 
   GetArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: get_artifact_lambda
-      Handler: get_artifact_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
-      Description: Lambda function to handle getting artifact with {id}
+      Handler: get_artifact_lambda.lambda_handler
+      CodeUri: ./backend/app/handlers
+      Description: Lambda for getting an artifact
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /artifacts/{artifact_type}/{id}          # route on API Gateway
-            Method: get                        # HTTP GET method
+            Path: /artifacts/{artifact_type}/{id}
+            Method: get
             RestApiId: !Ref ece461Ph2Api
-      Environment:
-        Variables:
-          ENVIRONMENT: dev
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
 
   UpdateArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: update_artifact_lambda
-      Handler: update_artifact_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
-      Description: Lambda function to handle updating artifact with {id}
+      Handler: update_artifact_lambda.lambda_handler
+      CodeUri: ./backend/app/handlers
+      Description: Lambda for updating artifact
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /artifacts/{artifact_type}/{id}          # route on API Gateway
-            Method: put                        # HTTP PUT method
+            Path: /artifacts/{artifact_type}/{id}
+            Method: put
             RestApiId: !Ref ece461Ph2Api
-      Environment:
-        Variables:
-          ENVIRONMENT: dev
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
 
   DeleteArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: delete_artifact_lambda
-      Handler: delete_artifact_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
-      Description: Lambda function to handle deleting artifact with {id}
+      Handler: delete_artifact_lambda.lambda_handler
+      CodeUri: ./backend/app/handlers
+      Description: Lambda for deleting artifact
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /artifacts/{artifact_type}/{id}          # route on API Gateway
-            Method: delete                        # HTTP DELETE method
+            Path: /artifacts/{artifact_type}/{id}
+            Method: delete
             RestApiId: !Ref ece461Ph2Api
-      Environment:
-        Variables:
-          ENVIRONMENT: dev
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
 
   ResetRegistryLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: reset_registry_lambda
-      Handler: reset_registry_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
-      Description: Lambda function to handle resetting the registry
+      Handler: reset_registry_lambda.lambda_handler
+      CodeUri: ./backend/app/handlers
+      Description: Lambda for resetting registry
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /reset         # route on API Gateway
-            Method: delete                        # HTTP DELETE method
+            Path: /reset
+            Method: delete
             RestApiId: !Ref ece461Ph2Api
-      Environment:
-        Variables:
-          ENVIRONMENT: dev
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
 
 Outputs:
   ApiEndpoint:
