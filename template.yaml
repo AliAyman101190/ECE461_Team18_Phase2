@@ -12,7 +12,6 @@ Globals:
       Variables:
         ENVIRONMENT: dev
         SECRET_NAME: DB_CREDS
-        AWS_REGION: us-east-1
 
 Resources:
 
