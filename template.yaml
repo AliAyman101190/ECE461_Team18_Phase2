@@ -5,13 +5,15 @@ Description: >
 
 Globals:
   Function:
-    Runtime: python3.13
+    Runtime: python3.10   # Changed to 3.10 for psycopg2 layer compatibility
     Timeout: 10
     MemorySize: 512
     Environment:
       Variables:
         ENVIRONMENT: dev
         SECRET_NAME: DB_CREDS
+    Layers:
+      - arn:aws:lambda:us-east-1:898466741470:layer:psycopg2-py310:3  # ✅ Precompiled psycopg2 layer for AWS
 
 Resources:
 
@@ -198,6 +200,9 @@ Resources:
   #########################################################
   # LAMBDA FUNCTIONS
   #########################################################
+
+  # All functions inherit Runtime, Environment, and Layers from Globals.
+  # Each function only needs its own policies and event wiring.
 
   CreateArtifactLambda:
     Type: AWS::Serverless::Function
