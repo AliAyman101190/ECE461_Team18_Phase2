@@ -22,12 +22,15 @@ def lambda_handler(event, context):
         """
         result = run_query(query, (artifact_type, url), fetch=True)[0]
 
+        # ✅ Fix: safely serialize datetime and other non-JSON types
+        response_body = {
+            "message": "Artifact created successfully!",
+            "artifact": result
+        }
+
         return {
             "statusCode": 201,
-            "body": json.dumps({
-                "message": "Artifact created successfully!",
-                "artifact": result
-            })
+            "body": json.dumps(response_body, default=str)  # <-- key fix here
         }
 
     except Exception as e:
