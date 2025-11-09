@@ -326,6 +326,51 @@ Resources:
             - Effect: Allow
               Action: secretsmanager:GetSecretValue
               Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
+    #########################################################
+  # LAMBDA INVOKE PERMISSIONS (for API Gateway)
+  #########################################################
+
+  CreateArtifactPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt CreateArtifactLambda.Arn
+      Principal: apigateway.amazonaws.com
+
+  ListArtifactsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ListArtifactsLambda.Arn
+      Principal: apigateway.amazonaws.com
+
+  GetArtifactPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt GetArtifactLambda.Arn
+      Principal: apigateway.amazonaws.com
+
+  UpdateArtifactPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt UpdateArtifactLambda.Arn
+      Principal: apigateway.amazonaws.com
+
+  DeleteArtifactPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt DeleteArtifactLambda.Arn
+      Principal: apigateway.amazonaws.com
+
+  ResetRegistryPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ResetRegistryLambda.Arn
+      Principal: apigateway.amazonaws.com
 
 Outputs:
   ApiEndpoint:
