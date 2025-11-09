@@ -256,4 +256,3 @@ class URLHandler:
             raise FileNotFoundError(f"URL file not found: {file_path}")
         except Exception as e:
             raise IOError(f"Error reading URL file {file_path}: {str(e)}")
-
