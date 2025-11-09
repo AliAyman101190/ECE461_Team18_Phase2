@@ -326,7 +326,9 @@ Resources:
             - Effect: Allow
               Action: secretsmanager:GetSecretValue
               Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
-    #########################################################
+  
+  
+  #########################################################
   # LAMBDA INVOKE PERMISSIONS (for API Gateway)
   #########################################################
 
@@ -336,6 +338,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt CreateArtifactLambda.Arn
       Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
 
   ListArtifactsPermission:
     Type: AWS::Lambda::Permission
@@ -343,6 +346,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt ListArtifactsLambda.Arn
       Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
 
   GetArtifactPermission:
     Type: AWS::Lambda::Permission
@@ -350,6 +354,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt GetArtifactLambda.Arn
       Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
 
   UpdateArtifactPermission:
     Type: AWS::Lambda::Permission
@@ -357,6 +362,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt UpdateArtifactLambda.Arn
       Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
 
   DeleteArtifactPermission:
     Type: AWS::Lambda::Permission
@@ -364,6 +370,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt DeleteArtifactLambda.Arn
       Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
 
   ResetRegistryPermission:
     Type: AWS::Lambda::Permission
@@ -371,6 +378,8 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt ResetRegistryLambda.Arn
       Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
+
 
 Outputs:
   ApiEndpoint:
