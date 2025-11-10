@@ -3,6 +3,14 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   ECE30861 Team 18 Phase 2 - Serverless Application
 
+Parameters:
+  GITHUB_TOKEN:
+    Type: String
+    Description: GitHub API token (passed from GitHub Secrets)
+  HF_TOKEN:
+    Type: String
+    Description: Hugging Face API token (passed from GitHub Secrets)
+
 Globals:
   Function:
     Runtime: python3.13
