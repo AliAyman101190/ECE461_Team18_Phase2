@@ -10,6 +10,7 @@ Globals:
     MemorySize: 512
     Environment:
       Variables:
+        S3_BUCKET: ece30861-team18-model-storage
         ENVIRONMENT: dev
         SECRET_NAME: DB_CREDS
     Layers:
