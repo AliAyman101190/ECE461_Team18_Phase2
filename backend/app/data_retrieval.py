@@ -12,8 +12,9 @@ import logging
 from url_data import URLData, RepositoryData
 from url_category import URLCategory
 
-os.makedirs('logs', exist_ok=True)
-LOG_FILE = os.path.join('logs', 'data_retrieval.log')
+LOG_DIR = '/tmp/logs'
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, 'data_retrieval.log')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(LOG_FILE) for h in logger.handlers):
