@@ -1,82 +1,110 @@
 import json
 import os
 import boto3
-from url_handler import URLHandler
-from data_retrieval import DataRetriever
-from rds_connection import run_query
+import psycopg2
+import urllib.request
+from urllib.parse import urlparse
+
+S3_BUCKET = os.environ.get("S3_BUCKET")
+SECRET_NAME = os.environ.get("SECRET_NAME", "DB_CREDS")
+
+secrets_client = boto3.client("secretsmanager")
+s3_client = boto3.client("s3")
+
+
+def get_db_connection():
+    """Retrieve DB credentials from Secrets Manager and connect to Postgres."""
+    secret_response = secrets_client.get_secret_value(SecretId=SECRET_NAME)
+    secret = json.loads(secret_response["SecretString"])
+    return psycopg2.connect(
+        host=secret["host"],
+        port=secret["port"],
+        dbname=secret["dbname"],
+        user=secret["username"],
+        password=secret["password"],
+    )
+
+
+def parse_huggingface_url(url: str):
+    """Extract model identifier from Hugging Face URL."""
+    parsed = urlparse(url)
+    parts = [p for p in parsed.path.split("/") if p]
+    if len(parts) >= 2:
+        return f"{parts[0]}/{parts[1]}"
+    return None
+
+
+def list_huggingface_files(identifier: str):
+    """Return list of file paths for a Hugging Face model."""
+    api_url = f"https://huggingface.co/api/models/{identifier}"
+    with urllib.request.urlopen(api_url) as response:
+        data = json.load(response)
+        siblings = data.get("siblings", [])
+        return [file["rfilename"] for file in siblings]
+
+
+def download_and_upload_to_s3(identifier: str, artifact_type: str, artifact_id: int):
+    """Stream all model files from HF → directly to S3."""
+    files = list_huggingface_files(identifier)
+    for filename in files:
+        hf_file_url = f"https://huggingface.co/{identifier}/resolve/main/{filename}"
+        s3_key = f"{artifact_type}/{artifact_id}/{filename}"
+        try:
+            with urllib.request.urlopen(hf_file_url) as response:
+                s3_client.upload_fileobj(response, S3_BUCKET, s3_key)
+        except Exception as e:
+            print(f"⚠️ Failed to upload {filename}: {e}")
+
 
 def lambda_handler(event, context):
     try:
-        artifact_type = event["pathParameters"]["artifact_type"]
         body = json.loads(event.get("body", "{}"))
         url = body.get("url")
+        artifact_type = event.get("pathParameters", {}).get("artifact_type")
 
-        if not url:
-            return {"statusCode": 400, "body": json.dumps({"error": "Missing URL"})}
-
-        # 1️⃣ Parse and classify URL
-        handler = URLHandler()
-        url_data = handler.handle_url(url)
-        if not url_data or not url_data.is_valid:
-            return {"statusCode": 400, "body": json.dumps({"error": "Invalid URL format"})}
-
-        # 2️⃣ Fetch metadata via DataRetriever
-        retriever = DataRetriever(
-            github_token=os.getenv("GITHUB_TOKEN"),
-            hf_token=os.getenv("HF_TOKEN")
-        )
-        repo_data = retriever.retrieve_data(url_data)
-
-        if not repo_data.success:
+        if not url or not artifact_type:
             return {
                 "statusCode": 400,
-                "body": json.dumps({"error": repo_data.error_message or "Failed to retrieve artifact data"})
+                "body": json.dumps({"error": "Missing URL or artifact_type"})
             }
 
-        # 3️⃣ Upload to S3 (optional first — you can skip large files initially)
-        s3 = boto3.client("s3")
-        bucket = os.environ["S3_BUCKET"]
+        identifier = parse_huggingface_url(url)
+        if not identifier:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "Invalid Hugging Face URL"})
+            }
 
-        folder_name = f"{artifact_type}s/{repo_data.name}"
-        s3_path = f"https://{bucket}.s3.amazonaws.com/{folder_name}/"
-        # Optional: upload README or minimal metadata
-        if repo_data.readme:
-            s3.put_object(
-                Bucket=bucket,
-                Key=f"{folder_name}/README.md",
-                Body=repo_data.readme.encode("utf-8"),
-                ContentType="text/markdown"
-            )
-
-        # 4️⃣ Store metadata in RDS
-        query = """
-        INSERT INTO artifacts (name, type, source_url, download_url, metadata)
-        VALUES (%s, %s, %s, %s, %s)
-        RETURNING id;
-        """
-        metadata_json = json.dumps(repo_data.__dict__, default=str)
-        result = run_query(
-            query,
-            (repo_data.name, artifact_type, url, s3_path, metadata_json),
-            fetch=True
+        # --- Insert DB record ---
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO artifacts (type, url, name) VALUES (%s, %s, %s) RETURNING id;",
+            (artifact_type, url, identifier),
         )
-        artifact_id = result[0]["id"]
+        artifact_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
 
-        # 5️⃣ Return spec-compliant response
-        response = {
-            "metadata": {
-                "name": repo_data.name,
-                "id": artifact_id,
-                "type": artifact_type
-            },
-            "data": {
-                "url": url,
-                "download_url": s3_path
-            }
+        # --- Download all files to S3 ---
+        download_and_upload_to_s3(identifier, artifact_type, artifact_id)
+
+        return {
+            "statusCode": 201,
+            "body": json.dumps({
+                "message": f"Artifact '{identifier}' ingested successfully",
+                "artifact": {
+                    "id": artifact_id,
+                    "type": artifact_type,
+                    "identifier": identifier,
+                    "s3_prefix": f"s3://{S3_BUCKET}/{artifact_type}/{artifact_id}/"
+                }
+            })
         }
 
-        return {"statusCode": 201, "body": json.dumps(response)}
-
     except Exception as e:
-        print("Error:", e)
-        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }
