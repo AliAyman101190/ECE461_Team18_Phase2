@@ -218,8 +218,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: create_artifact_lambda
-      Handler: create_artifact_lambda.lambda_handler
-      CodeUri: ./backend/app/handlers
+      Handler: handlers/create_artifact_lambda.lambda_handler
+      CodeUri: ./backend/app
       Description: Lambda for creating artifacts
       Events:
         ApiEvent:
@@ -239,8 +239,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: list_artifacts_lambda
-      Handler: list_artifacts_lambda.lambda_handler
-      CodeUri: ./backend/app/handlers
+      Handler: handlers/list_artifacts_lambda.lambda_handler
+      CodeUri: ./backend/app
       Description: Lambda for listing artifacts
       Events:
         ApiEvent:
@@ -260,8 +260,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: get_artifact_lambda
-      Handler: get_artifact_lambda.lambda_handler
-      CodeUri: ./backend/app/handlers
+      Handler: handlers/get_artifact_lambda.lambda_handler
+      CodeUri: ./backend/app
       Description: Lambda for getting an artifact
       Events:
         ApiEvent:
@@ -281,8 +281,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: update_artifact_lambda
-      Handler: update_artifact_lambda.lambda_handler
-      CodeUri: ./backend/app/handlers
+      Handler: handlers/update_artifact_lambda.lambda_handler
+      CodeUri: ./backend/app
       Description: Lambda for updating artifact
       Events:
         ApiEvent:
@@ -302,8 +302,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: delete_artifact_lambda
-      Handler: delete_artifact_lambda.lambda_handler
-      CodeUri: ./backend/app/handlers
+      Handler: handlers/delete_artifact_lambda.lambda_handler
+      CodeUri: ./backend/app
       Description: Lambda for deleting artifact
       Events:
         ApiEvent:
@@ -323,8 +323,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: reset_registry_lambda
-      Handler: reset_registry_lambda.lambda_handler
-      CodeUri: ./backend/app/handlers
+      Handler: handlers/reset_registry_lambda.lambda_handler
+      CodeUri: ./backend/app
       Description: Lambda for resetting registry
       Events:
         ApiEvent:
