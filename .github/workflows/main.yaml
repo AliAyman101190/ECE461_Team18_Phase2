@@ -47,6 +47,9 @@ jobs:
         sam build
 
     - name: Deploy to AWS
+      env:                              # 👈 Added block
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TEAM18_GITHUB_TOKEN }}
       run: |
         sam deploy \
           --no-confirm-changeset \
@@ -54,3 +57,5 @@ jobs:
           --stack-name ece461-team-18-phase-2-stack \
           --resolve-s3 \
           --capabilities CAPABILITY_IAM
+            GITHUB_TOKEN=$GITHUB_TOKEN \
+            HF_TOKEN=$HF_TOKEN          # 👈 Pass secrets to CloudFormation parameters
