@@ -6,10 +6,12 @@ Description: >
 Parameters:
   GITHUB_TOKEN:
     Type: String
-    Description: GitHub API token (passed from GitHub Secrets)
+    NoEcho: true
+    Description: GitHub token for upstream metadata/API calls
   HF_TOKEN:
     Type: String
-    Description: Hugging Face API token (passed from GitHub Secrets)
+    NoEcho: true
+    Description: Hugging Face token for API calls
 
 Globals:
   Function:

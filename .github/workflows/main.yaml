@@ -30,7 +30,6 @@ jobs:
       run: |
         python -m pytest --cov=app --cov-report=term-missing backend/tests/
 
-
 ## CD
     - name: Install AWS SAM CLI
       run: |
@@ -58,6 +57,4 @@ jobs:
           --stack-name ece461-team-18-phase-2-stack \
           --resolve-s3 \
           --capabilities CAPABILITY_IAM \
-          --parameter-overrides \
-            ParameterKey=GITHUB_TOKEN,ParameterValue=$GITHUB_TOKEN \
-            ParameterKey=HF_TOKEN,ParameterValue=$HF_TOKEN
+          --parameter-overrides GITHUB_TOKEN=$GITHUB_TOKEN HF_TOKEN=$HF_TOKEN
