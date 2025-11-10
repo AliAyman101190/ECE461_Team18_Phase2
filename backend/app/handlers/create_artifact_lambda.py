@@ -1,9 +1,8 @@
 import json
 import os
 import boto3
-import tempfile
-from huggingface_hub import HfApi, snapshot_download
-from url_handler import URLHandler, URLCategory
+from url_handler import URLHandler
+from data_retrieval import DataRetriever
 from rds_connection import run_query
 
 def lambda_handler(event, context):
@@ -13,79 +12,66 @@ def lambda_handler(event, context):
         url = body.get("url")
 
         if not url:
-            return {"statusCode": 400, "body": json.dumps({"error": "Missing url"})}
+            return {"statusCode": 400, "body": json.dumps({"error": "Missing URL"})}
 
-        # Step 1: Validate and classify URL
-        url_handler = URLHandler()
-        url_data = url_handler.handle_url(url)
+        # 1️⃣ Parse and classify URL
+        handler = URLHandler()
+        url_data = handler.handle_url(url)
+        if not url_data or not url_data.is_valid:
+            return {"statusCode": 400, "body": json.dumps({"error": "Invalid URL format"})}
 
-        if not url_data.is_valid:
-            return {"statusCode": 400, "body": json.dumps({"error": "Invalid URL"})}
+        # 2️⃣ Fetch metadata via DataRetriever
+        retriever = DataRetriever(
+            github_token=os.getenv("GITHUB_TOKEN"),
+            hf_token=os.getenv("HF_TOKEN")
+        )
+        repo_data = retriever.retrieve_data(url_data)
 
+        if not repo_data.success:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": repo_data.error_message or "Failed to retrieve artifact data"})
+            }
+
+        # 3️⃣ Upload to S3 (optional first — you can skip large files initially)
         s3 = boto3.client("s3")
         bucket = os.environ["S3_BUCKET"]
 
-        # Step 2: Ingest based on category
-        if url_data.category == URLCategory.HUGGINGFACE and artifact_type == "model":
-            api = HfApi()
-            model_info = api.model_info(url_data.unique_identifier)
-            metadata = {
-                "name": model_info.modelId,
-                "type": artifact_type,
-                "author": model_info.author,
-                "tags": model_info.tags,
-                "downloads": model_info.downloads,
-                "likes": model_info.likes,
-            }
+        folder_name = f"{artifact_type}s/{repo_data.name}"
+        s3_path = f"https://{bucket}.s3.amazonaws.com/{folder_name}/"
+        # Optional: upload README or minimal metadata
+        if repo_data.readme:
+            s3.put_object(
+                Bucket=bucket,
+                Key=f"{folder_name}/README.md",
+                Body=repo_data.readme.encode("utf-8"),
+                ContentType="text/markdown"
+            )
 
-            # Download and upload to S3
-            tmp_dir = tempfile.mkdtemp()
-            snapshot_download(repo_id=url_data.unique_identifier, local_dir=tmp_dir)
-            for root, _, files in os.walk(tmp_dir):
-                for f in files:
-                    local_path = os.path.join(root, f)
-                    rel_path = os.path.relpath(local_path, tmp_dir)
-                    s3.upload_file(local_path, bucket, f"models/{metadata['name']}/{rel_path}")
-
-            download_url = f"https://{bucket}.s3.amazonaws.com/models/{metadata['name']}/"
-
-        elif url_data.category == URLCategory.GITHUB and artifact_type == "code":
-            metadata = {
-                "name": url_data.repository,
-                "type": artifact_type,
-                "source": "github",
-            }
-            download_url = url  # for now, direct to GitHub
-
-        elif url_data.category == URLCategory.NPM and artifact_type == "dataset":
-            metadata = {
-                "name": url_data.package_name,
-                "type": artifact_type,
-                "source": "npm",
-            }
-            download_url = url
-
-        else:
-            return {"statusCode": 400, "body": json.dumps({"error": "URL does not match artifact_type"})}
-
-        # Step 3: Insert into DB
+        # 4️⃣ Store metadata in RDS
         query = """
-        INSERT INTO artifacts (name, type, source_url, download_url)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO artifacts (name, type, source_url, download_url, metadata)
+        VALUES (%s, %s, %s, %s, %s)
         RETURNING id;
         """
-        artifact_id = run_query(query, (metadata["name"], artifact_type, url, download_url), fetch=True)[0]["id"]
+        metadata_json = json.dumps(repo_data.__dict__, default=str)
+        result = run_query(
+            query,
+            (repo_data.name, artifact_type, url, s3_path, metadata_json),
+            fetch=True
+        )
+        artifact_id = result[0]["id"]
 
-        # Step 4: Return formatted response
+        # 5️⃣ Return spec-compliant response
         response = {
             "metadata": {
-                "name": metadata["name"],
+                "name": repo_data.name,
                 "id": artifact_id,
                 "type": artifact_type
             },
             "data": {
                 "url": url,
-                "download_url": download_url
+                "download_url": s3_path
             }
         }
 
