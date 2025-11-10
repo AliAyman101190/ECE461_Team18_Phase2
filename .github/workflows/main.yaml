@@ -58,5 +58,5 @@ jobs:
           --resolve-s3 \
           --capabilities CAPABILITY_IAM \
           --parameter-overrides \
-          "ParameterKey=GITHUB_TOKEN,ParameterValue=${GITHUB_TOKEN}" \
-          "ParameterKey=HF_TOKEN,ParameterValue=${HF_TOKEN}"
+          "ParameterKey=GITHUBTOKEN,ParameterValue=${GITHUB_TOKEN}" \
+          "ParameterKey=HFTOKEN,ParameterValue=${HF_TOKEN}"
