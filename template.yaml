@@ -18,10 +18,6 @@ Globals:
     Runtime: python3.13
     Timeout: 10
     MemorySize: 512
-    Metadata:
-      BuildMethod: python3.13
-      BuildArgs:
-        requirements: backend/requirements.txt
     Environment:
       Variables:
         S3_BUCKET: ece30861-team18-model-storage
