@@ -815,7 +815,7 @@ class ReproducibilityMetric(Metric):
         - 1.0 → Code runs successfully without modification
 
     Implementation notes:
-        • Extracts fenced code blocks (```python``` or ```bash```).
+        • Extracts fenced code blocks (```python```).
         • Executes snippets safely in an isolated subprocess.
         • Logs detailed steps for traceability.
     """
