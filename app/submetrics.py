@@ -974,6 +974,9 @@ class ReviewedenessMetric(Metric):
             repo_url = model_info.get("github_repo", "")
             if not repo_url:
                 logger.warning("No GitHub repo found in model info")
+                print("No GitHub repo found in model info")
+                logger.error(f"Error calculating ReviewedenessMetric: {e}")
+
                 return -1.0  # per the spec, -1 if no repo linked
 
             reviewed_fraction = self._get_reviewed_fraction(repo_url)
@@ -981,6 +984,7 @@ class ReviewedenessMetric(Metric):
             return clamp(reviewed_fraction, 0.0, 1.0)
 
         except Exception as e:
+            print(f"Error calculating ReviewedenessMetric: {e}")
             logger.error(f"Error calculating ReviewedenessMetric: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
@@ -997,6 +1001,7 @@ class ReviewedenessMetric(Metric):
             headers["Authorization"] = f"Bearer {token}"
         else:
             logger.warning("GitHub token missing; GraphQL call may fail.")
+            print("GitHub token missing; GraphQL call may fail.")
             return 0.0
 
         # Extract owner/repo from URL
@@ -1018,10 +1023,8 @@ class ReviewedenessMetric(Metric):
         }}
         }}
         """
-
         url = "https://api.github.com/graphql"
         body = {"query": query}
-
         try:
             resp = requests.post(url, headers=headers, json=body, timeout=10)
             resp.raise_for_status()
@@ -1038,6 +1041,7 @@ class ReviewedenessMetric(Metric):
 
         except Exception as e:
             logger.error(f"GraphQL query failed for {repo_url}: {e}")
+            print(f"GraphQL query failed for {repo_url}: {e}")
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
 
