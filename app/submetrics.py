@@ -1039,7 +1039,6 @@ class ReviewedenessMetric(Metric):
             self._latency = int((time.time() - start_time) * 1000)
             return 0.0
 
-
     def calculate_latency(self) -> int:
         return getattr(self, "_latency", 0)
 

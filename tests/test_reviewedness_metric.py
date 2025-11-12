@@ -57,10 +57,9 @@ class DummyResp:
 
 def test_valid_graphql_response_computes_fraction():
     """Should compute correct reviewed fraction from valid GraphQL JSON."""
-    logger.info("Starting test_valid_graphql_response_computes_fraction")
     metric = ReviewedenessMetric()
 
-    # Mock GraphQL response: 3 PRs, 2 have reviews (2/3 reviewed)
+    # Mock GraphQL JSON payload — 3 PRs, 2 of them reviewed
     mock_json = {
         "data": {
             "repository": {
@@ -75,26 +74,10 @@ def test_valid_graphql_response_computes_fraction():
         }
     }
 
-    # Expected reviewed fraction = 2 reviewed PRs / 3 total PRs
-    expected_fraction = 2 / 3
-
-    with patch("app.submetrics.requests.post", return_value=DummyResp(status_code=200, json_obj=mock_json)) as mock_post:
+    # Patch the correct import path for requests.post (since ReviewedenessMetric is in app/submetrics.py)
+    with patch('app.submetrics.requests.post', return_value=DummyResp(status_code=200, json_obj=mock_json)):
         score = metric._get_reviewed_fraction("https://github.com/huggingface/transformers")
-
-        # Extra debug logging to help trace CI behavior
-        logger.info(f"Mock called: {mock_post.called}")
-        logger.info(f"Returned score: {score}")
-        logger.info(f"Expected score: {expected_fraction}")
-
-        # Assert score is within tolerance
-        assert score is not None, "Score should not be None"
-        assert 0.0 <= score <= 1.0, f"Score {score} is out of valid range"
-        assert pytest.approx(score, rel=1e-3) == expected_fraction, (
-            f"Expected {expected_fraction:.4f}, got {score:.4f}"
-        )
-
-    logger.info("Finished test_valid_graphql_response_computes_fraction")
-
+        assert score == pytest.approx(2/3, rel=1e-3)
 
 
 def test_graphql_non_200_status_returns_zero():
