@@ -53,7 +53,7 @@ def download_and_upload_to_s3(identifier: str, artifact_type: str, artifact_id: 
             with urllib.request.urlopen(hf_file_url) as response:
                 s3_client.upload_fileobj(response, S3_BUCKET, s3_key)
         except Exception as e:
-            print(f"⚠️ Failed to upload {filename}: {e}")
+            print(f"Failed to upload {filename}: {e}")
 
 
 def lambda_handler(event, context):
