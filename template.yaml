@@ -95,7 +95,7 @@ Resources:
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthLambda.Arn}/invocations
-                httpMethod: GET
+                httpMethod: POST
                 type: aws_proxy
 
           /health/components:
@@ -129,6 +129,12 @@ Resources:
                     application/json:
                       schema:
                         $ref: "#/components/schemas/HealthComponentCollection"
+
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthComponentLambda.Arn}/invocations
+                httpMethod: POST
+                type: aws_proxy
 
           /artifacts:
             post:
@@ -279,6 +285,23 @@ Resources:
     Policies:
       - AWSLambdaBasicExecutionRole
 
+  HealthComponentLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: health_components_lambda
+      Handler: handlers/health_components_lambda.lambda_handler
+      CodeUri: ./backend/app
+      Runtime: python3.11
+      Description: Return per-component health diagnostics
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /health/components
+            Method: get
+            RestApiId: !Ref ece461Ph2Api
+    Policies:
+      - AWSLambdaBasicExecutionRole
 
   CreateArtifactLambda:
     Type: AWS::Serverless::Function
