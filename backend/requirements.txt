@@ -1,0 +1,26 @@
+# Core dependencies
+boto3
+botocore
+psycopg2-binary
+requests
+numpy
+pandas
+PyJWT
+
+# Optional: Only if you're using pymysql anywhere
+pymysql
+
+# Dev & Testing
+pytest
+pytest-cov
+mypy
+types-requests
+types-boto3
+types-botocore
+types-psycopg2
+types-cryptography
+python-dotenv
+huggingface_hub
+
+# Optional: better structured Lambda utilities
+aws-lambda-powertools
