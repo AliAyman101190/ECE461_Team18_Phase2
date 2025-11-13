@@ -5,6 +5,7 @@ psycopg2-binary
 requests
 numpy
 pandas
+jwt
 
 # Optional: Only if you're using pymysql anywhere
 pymysql
