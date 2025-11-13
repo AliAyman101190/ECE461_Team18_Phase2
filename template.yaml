@@ -733,11 +733,6 @@ Resources:
               responses:
                 "200":
                   description: Service reachable.
-              x-amazon-apigateway-integration:
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthLambda.Arn}/invocations
-                httpMethod: ANY
-                type: aws_proxy
 
           /health/components:
             get:
@@ -771,11 +766,6 @@ Resources:
                       schema:
                         $ref: "#/components/schemas/HealthComponentCollection"
 
-              x-amazon-apigateway-integration:
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthComponentLambda.Arn}/invocations
-                httpMethod: ANY
-                type: aws_proxy
 
           /artifacts:
             post:
@@ -791,11 +781,7 @@ Resources:
               responses:
                 "200":
                   description: List of artifacts
-              x-amazon-apigateway-integration:
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListArtifactsLambda.Arn}/invocations
-                httpMethod: ANY
-                type: aws_proxy
+
 
           /reset:
             delete:
@@ -811,11 +797,7 @@ Resources:
               responses:
                 "200":
                   description: Registry is reset
-              x-amazon-apigateway-integration:
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResetRegistryLambda.Arn}/invocations
-                httpMethod: ANY
-                type: aws_proxy
+
 
           /artifacts/{artifact_type}/{id}:
             get:
@@ -832,11 +814,7 @@ Resources:
               responses:
                 "200":
                   description: Artifact found
-              x-amazon-apigateway-integration:
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetArtifactLambda.Arn}/invocations
-                httpMethod: ANY
-                type: aws_proxy
+
 
             put:
               operationId: ArtifactUpdate
@@ -852,11 +830,7 @@ Resources:
               responses:
                 "200":
                   description: Artifact updated
-              x-amazon-apigateway-integration:
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateArtifactLambda.Arn}/invocations
-                httpMethod: ANY
-                type: aws_proxy
+
 
             delete:
               operationId: ArtifactDelete
@@ -872,11 +846,7 @@ Resources:
               responses:
                 "200":
                   description: Artifact deleted
-              x-amazon-apigateway-integration:
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteArtifactLambda.Arn}/invocations
-                httpMethod: ANY
-                type: aws_proxy
+
 
           /artifact/{artifact_type}:
             post:
@@ -893,11 +863,7 @@ Resources:
               responses:
                 "201":
                   description: Artifact created
-              x-amazon-apigateway-integration:
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateArtifactLambda.Arn}/invocations
-                httpMethod: ANY
-                type: aws_proxy
+
 
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
@@ -1077,66 +1043,6 @@ Resources:
               Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
   
   
-  #########################################################
-  # LAMBDA INVOKE PERMISSIONS (for API Gateway)
-  #########################################################
-  HealthPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: ~GetAtt HealthLambda.Arn 
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
-  CreateArtifactPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt CreateArtifactLambda.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
-  ListArtifactsPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt ListArtifactsLambda.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
-  GetArtifactPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt GetArtifactLambda.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
-  UpdateArtifactPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt UpdateArtifactLambda.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
-  DeleteArtifactPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt DeleteArtifactLambda.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
-  ResetRegistryPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt ResetRegistryLambda.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
-
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
