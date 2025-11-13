@@ -378,7 +378,7 @@ Resources:
     Properties:
       FunctionName: create_artifact_lambda
       Handler: create_artifact_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+      CodeUri: ./backend                 # directory with lambda_function.py
       Description: Lambda function to handle artifact creation requests.
       Events:
         ApiEvent:
@@ -397,7 +397,7 @@ Resources:
     Properties:
       FunctionName: list_artifacts_lambda
       Handler: list_artifacts_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+      CodeUri: ./backend                 # directory with lambda_function.py
       Description: Lambda function to handle listing all the artifacts
       Events:
         ApiEvent:
@@ -415,7 +415,7 @@ Resources:
     Properties:
       FunctionName: get_artifact_lambda
       Handler: get_artifact_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+      CodeUri: ./backend                 # directory with lambda_function.py
       Description: Lambda function to handle getting artifact with {id}
       Events:
         ApiEvent:
@@ -433,7 +433,7 @@ Resources:
     Properties:
       FunctionName: update_artifact_lambda
       Handler: update_artifact_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+      CodeUri: ./backend                 # directory with lambda_function.py
       Description: Lambda function to handle updating artifact with {id}
       Events:
         ApiEvent:
@@ -451,7 +451,7 @@ Resources:
     Properties:
       FunctionName: delete_artifact_lambda
       Handler: delete_artifact_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+      CodeUri: ./backend                # directory with lambda_function.py
       Description: Lambda function to handle deleting artifact with {id}
       Events:
         ApiEvent:
@@ -469,7 +469,7 @@ Resources:
     Properties:
       FunctionName: reset_registry_lambda
       Handler: reset_registry_lambda.lambda_handler   # file.lambda_handler
-      CodeUri: ./backend/app/handlers                  # directory with lambda_function.py
+      CodeUri: ./backend                # directory with lambda_function.py
       Description: Lambda function to handle resetting the registry
       Events:
         ApiEvent:
