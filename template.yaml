@@ -921,7 +921,7 @@ Resources:
           Type: Api
           Properties:
             Path: /health
-            Method: get
+            Method: any
             RestApiId: !Ref ece461Ph2Api
     Policies:
       - AWSLambdaBasicExecutionRole
