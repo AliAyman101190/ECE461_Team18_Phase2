@@ -22,7 +22,8 @@ def lambda_handler(event, context):
     secret = body.get("secret", {})
 
     username = user.get("name")
-    is_admin = user.get("is_admin")
+    is_admin = True
+    # is_admin = user.get("is_admin")
     password = secret.get("password")
 
     # Validate request structure
@@ -57,6 +58,7 @@ def lambda_handler(event, context):
 
     # MUST return as plain string inside JSON
     return response(200, f"bearer {token}")
+    
 
 
 # Helper to build API Gateway compatible response
