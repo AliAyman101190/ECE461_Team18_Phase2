@@ -738,6 +738,17 @@ Resources:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthLambda.Arn}/invocations
                 httpMethod: POST
                 type: aws_proxy
+            
+            head:           
+              summary: "HEAD for health"
+              responses:
+                "200":
+                  description: OK
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthLambda.Arn}/invocations
+                httpMethod: POST
+                type: aws_proxy
 
           /health/components:
             get:
