@@ -6,7 +6,7 @@ import boto3
 import psycopg2
 import urllib.request
 from urllib.parse import urlparse
-from app.auth import require_auth
+from auth import require_auth
 
 # Import rating logic
 from metric_calculator import MetricCalculator
