@@ -789,17 +789,6 @@ Resources:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthLambda.Arn}/invocations
                 httpMethod: POST
                 type: aws_proxy
-            
-            head:           
-              summary: "HEAD for health"
-              responses:
-                "200":
-                  description: OK
-              x-amazon-apigateway-integration:
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthLambda.Arn}/invocations
-                httpMethod: POST
-                type: aws_proxy
 
           /health/components:
             get:
@@ -1002,21 +991,21 @@ Resources:
   # LAMBDA FUNCTIONS
   #########################################################
   AuthLambda:
-  Type: AWS::Serverless::Function
-  Properties:
-    FunctionName: auth_lambda
-    Handler: handlers/auth_lambda.lambda_handler
-    CodeUri: ./backend/app
-    Runtime: python3.11
-    Events:
-      ApiEvent:
-        Type: Api
-        Properties:
-          Path: /authenticate
-          Method: put
-          RestApiId: !Ref ece461Ph2Api
-    Policies:
-      - AWSLambdaBasicExecutionRole
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: auth_lambda
+      Handler: handlers/auth_lambda.lambda_handler
+      CodeUri: ./backend/app
+      Runtime: python3.11
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /authenticate
+            Method: put
+            RestApiId: !Ref ece461Ph2Api
+      Policies:
+        - AWSLambdaBasicExecutionRole
 
   HealthLambda:
     Type: AWS::Serverless::Function
