@@ -1074,6 +1074,13 @@ Resources:
   #########################################################
   # LAMBDA INVOKE PERMISSIONS (for API Gateway)
   #########################################################
+  HealthPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: ~GetAtt HealthLambda.Arn 
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
 
   CreateArtifactPermission:
     Type: AWS::Lambda::Permission
