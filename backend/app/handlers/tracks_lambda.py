@@ -4,7 +4,7 @@ def lambda_handler(event, context):
         "headers": {"Content-Type": "application/json"},
         "body": """{
             "plannedTracks": [
-                "Access control track",
+                "Access control track"
             ]
         }"""
     }
