@@ -377,7 +377,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: create_artifact_lambda
-      Handler: create_artifact_lambda.lambda_handler   # file.lambda_handler
+      Handler: app/handlers/create_artifact_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend                 # directory with lambda_function.py
       Description: Lambda function to handle artifact creation requests.
       Events:
@@ -396,7 +396,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: list_artifacts_lambda
-      Handler: list_artifacts_lambda.lambda_handler   # file.lambda_handler
+      Handler: app/handlers/list_artifacts_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend                 # directory with lambda_function.py
       Description: Lambda function to handle listing all the artifacts
       Events:
@@ -414,7 +414,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: get_artifact_lambda
-      Handler: get_artifact_lambda.lambda_handler   # file.lambda_handler
+      Handler: app/handlers/get_artifact_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend                 # directory with lambda_function.py
       Description: Lambda function to handle getting artifact with {id}
       Events:
@@ -432,7 +432,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: update_artifact_lambda
-      Handler: update_artifact_lambda.lambda_handler   # file.lambda_handler
+      Handler: app/handlers/update_artifact_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend                 # directory with lambda_function.py
       Description: Lambda function to handle updating artifact with {id}
       Events:
@@ -450,7 +450,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: delete_artifact_lambda
-      Handler: delete_artifact_lambda.lambda_handler   # file.lambda_handler
+      Handler: app/handlers/delete_artifact_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend                # directory with lambda_function.py
       Description: Lambda function to handle deleting artifact with {id}
       Events:
@@ -468,7 +468,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: reset_registry_lambda
-      Handler: reset_registry_lambda.lambda_handler   # file.lambda_handler
+      Handler: app/handlers/reset_registry_lambda.lambda_handler   # file.lambda_handler
       CodeUri: ./backend                # directory with lambda_function.py
       Description: Lambda function to handle resetting the registry
       Events:
