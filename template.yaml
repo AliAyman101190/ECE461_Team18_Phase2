@@ -788,6 +788,38 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
 
+          /tracks:
+            get:
+              summary: "Get the list of tracks a student has planned to implement in their code"
+              
+              responses:
+                "200":
+                  description: Return the list of tracks the student plans to implement
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          plannedTracks:
+                            type: array
+                            description: "List of tracks the student plans to implement"
+                            items:
+                              type: string
+                              enum:
+                                - "Performance track"
+                                - "Access control track"
+                                - "High assurance track"
+                                - "Other Security track"
+
+                "500":
+                  description: The system encountered an error while retrieving the student's track information.
+              
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TracksLambda.Arn}/invocations
+                httpMethod: POST
+                type: aws_proxy      
+
           /artifacts:
             post:
               operationId: ArtifactsList
@@ -936,6 +968,24 @@ Resources:
             RestApiId: !Ref ece461Ph2Api
     Policies:
       - AWSLambdaBasicExecutionRole
+  
+  TracksLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: tracks_lambda
+      Handler: handlers/tracks_lambda.lambda_handler
+      CodeUri: ./backend/app
+      Runtime: python3.11
+      Description: Return track list
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /tracks
+            Method: get
+            RestApiId: !Ref ece461Ph2Api
+      Policies:
+        - AWSLambdaBasicExecutionRole
 
   HealthComponentLambda:
     Type: AWS::Serverless::Function
@@ -1098,6 +1148,15 @@ Resources:
       FunctionName: !GetAtt HealthLambda.Arn 
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
+
+
+  GetTracksPermission:
+  Type: AWS::Lambda::Permission
+  Properties:
+    Action: lambda:InvokeFunction
+    FunctionName: !GetAtt TracksLambda.Arn
+    Principal: apigateway.amazonaws.com
+    SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
 
   CreateArtifactPermission:
     Type: AWS::Lambda::Permission
