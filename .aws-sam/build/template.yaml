@@ -1,8 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  ECE30861 Team 18 Phase 2 - Serverless Application
+Description: 'ECE30861 Team 18 Phase 2 - Serverless Application
 
+  '
 Parameters:
   GITHUBTOKEN:
     Type: String
@@ -12,7 +12,6 @@ Parameters:
     Type: String
     NoEcho: true
     Description: Hugging Face token for model ingest
-
 Globals:
   Function:
     Runtime: python3.11
@@ -23,16 +22,13 @@ Globals:
         S3_BUCKET: ece30861-team18-model-storage
         ENVIRONMENT: dev
         SECRET_NAME: DB_CREDS
-        GITHUB_TOKEN: !Ref GITHUBTOKEN
-        HF_TOKEN: !Ref HFTOKEN
+        GITHUB_TOKEN:
+          Ref: GITHUBTOKEN
+        HF_TOKEN:
+          Ref: HFTOKEN
     Layers:
-      - arn:aws:lambda:us-east-1:422216016693:layer:psycopg2-py313-layer-new2:1
-
+    - arn:aws:lambda:us-east-1:422216016693:layer:psycopg2-py313-layer-new2:1
 Resources:
-
-  #########################################################
-  # API Gateway
-  #########################################################
   ece461Ph2Api:
     Type: AWS::Serverless::Api
     Properties:
@@ -43,31 +39,27 @@ Resources:
         info:
           title: ECE461 Phase 2 API
           version: 3.3.1
-
-  #########################################################
-  # COMPONENTS
-  #########################################################
         components:
           schemas:
             Artifact:
               description: Artifact envelope containing metadata and ingest details.
               required:
-                - metadata
-                - data
+              - metadata
+              - data
               type: object
               properties:
                 metadata:
-                  $ref: "#/components/schemas/ArtifactMetadata"
+                  $ref: '#/components/schemas/ArtifactMetadata'
                 data:
-                  $ref: "#/components/schemas/ArtifactData"
-
+                  $ref: '#/components/schemas/ArtifactData'
             ArtifactData:
-              description: |-
-                Source location for ingesting an artifact.
+              description: 'Source location for ingesting an artifact.
 
-                Provide a single downloadable url pointing to a bundle that contains the artifact assets.
+
+                Provide a single downloadable url pointing to a bundle that contains
+                the artifact assets.'
               required:
-                - url
+              - url
               type: object
               properties:
                 url:
@@ -75,146 +67,139 @@ Resources:
                   type: string
                   format: uri
                 download_url:
-                  description: Direct download link served by your server for retrieving the stored artifact bundle. Present only in responses.
+                  description: Direct download link served by your server for retrieving
+                    the stored artifact bundle. Present only in responses.
                   type: string
                   format: uri
                   readOnly: true
               example:
                 url: https://huggingface.co/openai/whisper-tiny/tree/main
                 download_url: https://ec2-10-121-34-12/download/whisper-tiny
-
             ArtifactType:
-              description: "Artifact category."
+              description: Artifact category.
               type: string
               enum:
-                - model
-                - dataset
-                - code
-
+              - model
+              - dataset
+              - code
             ArtifactID:
-              description: "Unique identifier for use with artifact endpoints."
-              example: "48472749248"
+              description: Unique identifier for use with artifact endpoints.
+              example: '48472749248'
               type: string
-              pattern: '^[a-zA-Z0-9\-]+$'
-
+              pattern: ^[a-zA-Z0-9\-]+$
             ArtifactName:
-              description: |-
-                Name of an artifact.
+              description: 'Name of an artifact.
+
 
                 - Names should only use typical "keyboard" characters.
-                - The name "*" is reserved. See the `/artifacts` API for its meaning.
+
+                - The name "*" is reserved. See the `/artifacts` API for its meaning.'
               type: string
-
             ArtifactMetadata:
-              description: |-
-                The `name` is provided when uploading an artifact.
+              description: 'The `name` is provided when uploading an artifact.
 
-                The `id` is used as an internal identifier for interacting with existing artifacts and distinguishes artifacts that share a name.
+
+                The `id` is used as an internal identifier for interacting with existing
+                artifacts and distinguishes artifacts that share a name.'
               required:
-                - name
-                - id
-                - type
+              - name
+              - id
+              - type
               type: object
               properties:
                 name:
-                  $ref: "#/components/schemas/ArtifactName"
+                  $ref: '#/components/schemas/ArtifactName'
                 id:
-                  $ref: "#/components/schemas/ArtifactID"
+                  $ref: '#/components/schemas/ArtifactID'
                 type:
-                  $ref: "#/components/schemas/ArtifactType"
-
+                  $ref: '#/components/schemas/ArtifactType'
             ArtifactQuery:
-              description: ""
+              description: ''
               required:
-                - name
+              - name
               type: object
               properties:
                 name:
-                  $ref: "#/components/schemas/ArtifactName"
-                  description: ""
+                  $ref: '#/components/schemas/ArtifactName'
+                  description: ''
                 types:
                   description: Optional list of artifact types to filter results.
                   type: array
                   items:
-                    $ref: "#/components/schemas/ArtifactType"
-
+                    $ref: '#/components/schemas/ArtifactType'
             ArtifactAuditEntry:
               description: One entry in an artifact's audit history.
               required:
-                - user
-                - date
-                - artifact
-                - action
+              - user
+              - date
+              - artifact
+              - action
               type: object
               properties:
                 user:
-                  $ref: "#/components/schemas/User"
-                  description: ""
+                  $ref: '#/components/schemas/User'
+                  description: ''
                 date:
                   format: date-time
-                  description: Date of activity using ISO-8601 Datetime standard in UTC format.
+                  description: Date of activity using ISO-8601 Datetime standard in
+                    UTC format.
                   type: string
-                  example: 2023-03-23T23:11:15Z
+                  example: '2023-03-23T23:11:15Z'
                 artifact:
-                  $ref: "#/components/schemas/ArtifactMetadata"
-                  description: ""
+                  $ref: '#/components/schemas/ArtifactMetadata'
+                  description: ''
                 action:
-                  description: ""
+                  description: ''
                   enum:
-                    - CREATE
-                    - UPDATE
-                    - DOWNLOAD
-                    - RATE
-                    - AUDIT
+                  - CREATE
+                  - UPDATE
+                  - DOWNLOAD
+                  - RATE
+                  - AUDIT
                   type: string
-
             ArtifactCost:
-              description: Artifact Cost aggregates the total download size (in MB) required for the artifact, optionally including dependencies.
+              description: Artifact Cost aggregates the total download size (in MB)
+                required for the artifact, optionally including dependencies.
               type: object
               additionalProperties:
                 type: object
                 properties:
                   standalone_cost:
                     type: number
-                    description: The standalone cost of this artifact excluding dependencies. Required when `dependency = true` in the request.
+                    description: The standalone cost of this artifact excluding dependencies.
+                      Required when `dependency = true` in the request.
                   total_cost:
                     type: number
-                    description: |
-                      The total cost of the artifact. When `dependency` is not set, this should return the standalone cost,
-                      and when it is set, this field should return the sum of the costs of all the dependencies.
-
-                      For example:
-
-                        Artifact 1 -> Artifact 2 -> Artifact 3, Artifact 4.
-
-                          If dependency = false
-                            total_cost = size(artifact_1)
-                          If dependency = true
-                          total_cost = size(artifact_1 + artifact_2 + artifact_3 + artifact_4)
+                    description: "The total cost of the artifact. When `dependency`\
+                      \ is not set, this should return the standalone cost,\nand when\
+                      \ it is set, this field should return the sum of the costs of\
+                      \ all the dependencies.\n\nFor example:\n\n  Artifact 1 -> Artifact\
+                      \ 2 -> Artifact 3, Artifact 4.\n\n    If dependency = false\n\
+                      \      total_cost = size(artifact_1)\n    If dependency = true\n\
+                      \    total_cost = size(artifact_1 + artifact_2 + artifact_3\
+                      \ + artifact_4)\n"
                 required:
-                  - total_cost
-
+                - total_cost
             ArtifactRegEx:
-              description: ""
+              description: ''
               required:
-                - regex
+              - regex
               type: object
               properties:
                 regex:
-                  description:
-                    A regular expression over artifact names and READMEs that is
-                    used for searching for an artifact
+                  description: A regular expression over artifact names and READMEs
+                    that is used for searching for an artifact
                   type: string
-
             ArtifactLineageNode:
               description: A single node in an artifact lineage graph.
               required:
-                - node
+              - node
               type: object
               properties:
                 artifact_id:
-                  description: Unique identifier for the node (artifact or external dependency).
-                  $ref: "#/components/schemas/ArtifactID"
+                  description: Unique identifier for the node (artifact or external
+                    dependency).
+                  $ref: '#/components/schemas/ArtifactID'
                 name:
                   description: Human-readable label for the node.
                   type: string
@@ -229,50 +214,47 @@ Resources:
                   example:
                     repository_url: https://huggingface.co/parvk11/audience_classifier_model
                     sha: 23c9e8adf2
-
             ArtifactLineageEdge:
               description: Directed relationship between two lineage nodes.
               required:
-                - from_node_artifact_id
-                - to_node_artifact_id
-                - relationship
+              - from_node_artifact_id
+              - to_node_artifact_id
+              - relationship
               type: object
               properties:
                 from_node_artifact_id:
                   description: Identifier of the upstream node.
-                  $ref: "#/components/schemas/ArtifactID"
+                  $ref: '#/components/schemas/ArtifactID'
                   example: 57382910458
                 to_node_artifact_id:
                   description: Identifier of the downstream node.
-                  $ref: "#/components/schemas/ArtifactID"
+                  $ref: '#/components/schemas/ArtifactID'
                   example: 38472472949
                 relationship:
                   description: Qualitative description of the edge.
                   type: string
                   example: fine_tuning_dataset
-
             ArtifactLineageGraph:
               description: Complete lineage graph for an artifact.
               required:
-                - nodes
-                - edges
+              - nodes
+              - edges
               type: object
               properties:
                 nodes:
                   description: Nodes participating in the lineage graph.
                   type: array
                   items:
-                    $ref: "#/components/schemas/ArtifactLineageNode"
+                    $ref: '#/components/schemas/ArtifactLineageNode'
                 edges:
                   description: Directed edges describing lineage relationships.
                   type: array
                   items:
-                    $ref: "#/components/schemas/ArtifactLineageEdge"
-
+                    $ref: '#/components/schemas/ArtifactLineageEdge'
             SimpleLicenseCheckRequest:
               description: Request payload for artifact license compatibility analysis.
               required:
-                - github_url
+              - github_url
               type: object
               properties:
                 github_url:
@@ -280,63 +262,59 @@ Resources:
                   type: string
                   format: uri
                   example: https://github.com/google-research/bert
-
             User:
-              description: ""
+              description: ''
               required:
-                - name
-                - is_admin
+              - name
+              - is_admin
               type: object
               properties:
                 name:
-                  description: ""
+                  description: ''
                   type: string
                   example: Alfalfa
                 is_admin:
                   description: Is this user an admin?
                   type: boolean
-
             UserAuthenticationInfo:
               description: Authentication info for a user
               required:
-                - password
+              - password
               type: object
               properties:
                 password:
-                  description:
-                    "Password for a user. Per the spec, this should be a \"strong\"\
-                    \ password."
+                  description: Password for a user. Per the spec, this should be a
+                    "strong" password.
                   type: string
-
             ModelRating:
               description: Model rating summary generated by the evaluation service.
               required:
-                - name
-                - category
-                - net_score
-                - net_score_latency
-                - ramp_up_time
-                - ramp_up_time_latency
-                - bus_factor
-                - bus_factor_latency
-                - performance_claims
-                - performance_claims_latency
-                - license
-                - license_latency
-                - dataset_and_code_score
-                - dataset_and_code_score_latency
-                - dataset_quality
-                - dataset_quality_latency
-                - code_quality
-                - code_quality_latency
-                - reproducibility
-                - reproducibility_latency
-                - reviewedness
-                - reviewedness_latency
-                - tree_score
-                - tree_score_latency
-                - size_score
-                - size_score_latency
+              - name
+              - category
+              - net_score
+              - net_score_latency
+              - ramp_up_time
+              - ramp_up_time_latency
+              - bus_factor
+              - bus_factor_latency
+              - performance_claims
+              - performance_claims_latency
+              - license
+              - license_latency
+              - dataset_and_code_score
+              - dataset_and_code_score_latency
+              - dataset_quality
+              - dataset_quality_latency
+              - code_quality
+              - code_quality_latency
+              - reproducibility
+              - reproducibility_latency
+              - reviewedness
+              - reviewedness_latency
+              - tree_score
+              - tree_score_latency
+              - size_score
+              - size_score_latency
               type: object
               properties:
                 name:
@@ -387,7 +365,8 @@ Resources:
                   type: number
                 dataset_and_code_score:
                   format: double
-                  description: Availability and quality of accompanying datasets and code.
+                  description: Availability and quality of accompanying datasets and
+                    code.
                   type: number
                 dataset_and_code_score_latency:
                   format: double
@@ -437,10 +416,10 @@ Resources:
                   description: Size suitability scores for common deployment targets.
                   type: object
                   required:
-                    - raspberry_pi
-                    - jetson_nano
-                    - desktop_pc
-                    - aws_server
+                  - raspberry_pi
+                  - jetson_nano
+                  - desktop_pc
+                  - aws_server
                   properties:
                     raspberry_pi:
                       format: double
@@ -463,45 +442,46 @@ Resources:
                   format: double
                   type: number
             AuthenticationToken:
-              description:
-                "The spec permits you to use any token format you like. You could,\
-                \ for example, look into JSON Web Tokens (\"JWT\", pronounced \"jots\"): https://jwt.io."
+              description: 'The spec permits you to use any token format you like.
+                You could, for example, look into JSON Web Tokens ("JWT", pronounced
+                "jots"): https://jwt.io.'
               type: string
             AuthenticationRequest:
-              description: ""
+              description: ''
               required:
-                - user
-                - secret
+              - user
+              - secret
               type: object
               properties:
                 user:
-                  $ref: "#/components/schemas/User"
-                  description: ""
+                  $ref: '#/components/schemas/User'
+                  description: ''
                 secret:
-                  $ref: "#/components/schemas/UserAuthenticationInfo"
-                  description: ""
+                  $ref: '#/components/schemas/UserAuthenticationInfo'
+                  description: ''
             EnumerateOffset:
               description: Offset in pagination.
               type: string
-              example: "1"
+              example: '1'
             HealthStatus:
               description: Aggregate health classification for monitored systems.
               type: string
               enum:
-                - ok
-                - degraded
-                - critical
-                - unknown
+              - ok
+              - degraded
+              - critical
+              - unknown
             HealthSummaryResponse:
-              description: High-level snapshot summarizing registry health and recent activity.
+              description: High-level snapshot summarizing registry health and recent
+                activity.
               required:
-                - status
-                - checked_at
-                - window_minutes
+              - status
+              - checked_at
+              - window_minutes
               type: object
               properties:
                 status:
-                  $ref: "#/components/schemas/HealthStatus"
+                  $ref: '#/components/schemas/HealthStatus'
                 checked_at:
                   description: Timestamp when the health snapshot was generated (UTC).
                   type: string
@@ -518,22 +498,22 @@ Resources:
                   description: Running service version or git SHA when available.
                   type: string
                 request_summary:
-                  $ref: "#/components/schemas/HealthRequestSummary"
+                  $ref: '#/components/schemas/HealthRequestSummary'
                 components:
                   description: Rollup of component status ordered by severity.
                   type: array
                   items:
-                    $ref: "#/components/schemas/HealthComponentBrief"
+                    $ref: '#/components/schemas/HealthComponentBrief'
                 logs:
                   description: Quick links or descriptors for recent log files.
                   type: array
                   items:
-                    $ref: "#/components/schemas/HealthLogReference"
+                    $ref: '#/components/schemas/HealthLogReference'
             HealthRequestSummary:
               description: Request activity observed within the health window.
               required:
-                - window_start
-                - window_end
+              - window_start
+              - window_end
               type: object
               properties:
                 window_start:
@@ -567,18 +547,19 @@ Resources:
             HealthComponentBrief:
               description: Lightweight component-level status summary.
               required:
-                - id
-                - status
+              - id
+              - status
               type: object
               properties:
                 id:
-                  description: Stable identifier for the component (e.g., ingest-worker, metrics).
+                  description: Stable identifier for the component (e.g., ingest-worker,
+                    metrics).
                   type: string
                 display_name:
                   description: Human readable component name.
                   type: string
                 status:
-                  $ref: "#/components/schemas/HealthStatus"
+                  $ref: '#/components/schemas/HealthStatus'
                 issue_count:
                   description: Number of outstanding issues contributing to the status.
                   type: integer
@@ -590,14 +571,14 @@ Resources:
             HealthComponentCollection:
               description: Detailed health diagnostics broken down per component.
               required:
-                - components
-                - generated_at
+              - components
+              - generated_at
               type: object
               properties:
                 components:
                   type: array
                   items:
-                    $ref: "#/components/schemas/HealthComponentDetail"
+                    $ref: '#/components/schemas/HealthComponentDetail'
                 generated_at:
                   description: Timestamp when the component report was created (UTC).
                   type: string
@@ -609,9 +590,9 @@ Resources:
             HealthComponentDetail:
               description: Detailed status, metrics, and log references for a component.
               required:
-                - id
-                - status
-                - observed_at
+              - id
+              - status
+              - observed_at
               type: object
               properties:
                 id:
@@ -621,45 +602,46 @@ Resources:
                   description: Human readable component name.
                   type: string
                 status:
-                  $ref: "#/components/schemas/HealthStatus"
+                  $ref: '#/components/schemas/HealthStatus'
                 observed_at:
-                  description: Timestamp when data for this component was last collected (UTC).
+                  description: Timestamp when data for this component was last collected
+                    (UTC).
                   type: string
                   format: date-time
                 description:
                   description: Overview of the component's responsibility.
                   type: string
                 metrics:
-                  $ref: "#/components/schemas/HealthMetricMap"
+                  $ref: '#/components/schemas/HealthMetricMap'
                 issues:
                   type: array
                   items:
-                    $ref: "#/components/schemas/HealthIssue"
+                    $ref: '#/components/schemas/HealthIssue'
                 timeline:
                   type: array
                   items:
-                    $ref: "#/components/schemas/HealthTimelineEntry"
+                    $ref: '#/components/schemas/HealthTimelineEntry'
                 logs:
                   type: array
                   items:
-                    $ref: "#/components/schemas/HealthLogReference"
+                    $ref: '#/components/schemas/HealthLogReference'
             HealthMetricMap:
               description: Arbitrary metric key/value pairs describing component performance.
               type: object
               additionalProperties:
-                $ref: "#/components/schemas/HealthMetricValue"
+                $ref: '#/components/schemas/HealthMetricValue'
             HealthMetricValue:
               description: Flexible representation for metric values.
               oneOf:
-                - type: integer
-                - type: number
-                - type: string
-                - type: boolean
+              - type: integer
+              - type: number
+              - type: string
+              - type: boolean
             HealthTimelineEntry:
               description: Time-series datapoint for a component metric.
               required:
-                - bucket
-                - value
+              - bucket
+              - value
               type: object
               properties:
                 bucket:
@@ -675,9 +657,9 @@ Resources:
             HealthIssue:
               description: Outstanding issue or alert impacting a component.
               required:
-                - code
-                - severity
-                - summary
+              - code
+              - severity
+              - summary
               type: object
               properties:
                 code:
@@ -687,9 +669,9 @@ Resources:
                   description: Issue severity.
                   type: string
                   enum:
-                    - info
-                    - warning
-                    - error
+                  - info
+                  - warning
+                  - error
                 summary:
                   description: Short description of the issue.
                   type: string
@@ -699,12 +681,13 @@ Resources:
             HealthLogReference:
               description: Link or descriptor for logs relevant to a health component.
               required:
-                - label
-                - url
+              - label
+              - url
               type: object
               properties:
                 label:
-                  description: Human readable log descriptor (e.g., "Ingest Worker 1").
+                  description: Human readable log descriptor (e.g., "Ingest Worker
+                    1").
                   type: string
                 url:
                   description: Direct link to download or tail the referenced log.
@@ -714,206 +697,191 @@ Resources:
                   description: Indicates whether streaming tail access is supported.
                   type: boolean
                 last_updated_at:
-                  description: Timestamp of the latest log entry available for this reference.
+                  description: Timestamp of the latest log entry available for this
+                    reference.
                   type: string
                   format: date-time
-  #########################################################
-  # COMPONENTS END
-  #########################################################
-  # PATHS
-  #########################################################
-
         paths:
           /health:
             get:
-              summary: "Heartbeat check (BASELINE)"
-              description: |-
-                Lightweight liveness probe. Returns HTTP 200 when the registry API is reachable.
+              summary: Heartbeat check (BASELINE)
+              description: Lightweight liveness probe. Returns HTTP 200 when the registry
+                API is reachable.
               operationId: RegistryHealthHeartbeat
               responses:
-                "200":
+                '200':
                   description: Service reachable.
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthLambda.Arn}/invocations
                 httpMethod: ANY
                 type: aws_proxy
-
           /health/components:
             get:
-              summary: "Get component health details (NON-BASELINE)"
-              description: |-
-                Return per-component health diagnostics, including status, active issues, and log references.
-                Use this endpoint to power deeper observability dashboards or for incident debugging.
+              summary: Get component health details (NON-BASELINE)
+              description: 'Return per-component health diagnostics, including status,
+                active issues, and log references.
+
+                Use this endpoint to power deeper observability dashboards or for
+                incident debugging.'
               operationId: RegistryHealthComponents
               parameters:
-                - name: windowMinutes
-                  in: query
-                  description: "Length of the trailing observation window, in minutes (5-1440). Defaults to 60."
-                  required: false
-                  schema:
-                    type: integer
-                    minimum: 5
-                    maximum: 1440
-                    default: 60
-                - name: includeTimeline
-                  in: query
-                  description: "Set to true to include per-component activity timelines sampled across the window."
-                  required: false
-                  schema:
-                    type: boolean
-                    default: false
+              - name: windowMinutes
+                in: query
+                description: Length of the trailing observation window, in minutes
+                  (5-1440). Defaults to 60.
+                required: false
+                schema:
+                  type: integer
+                  minimum: 5
+                  maximum: 1440
+                  default: 60
+              - name: includeTimeline
+                in: query
+                description: Set to true to include per-component activity timelines
+                  sampled across the window.
+                required: false
+                schema:
+                  type: boolean
+                  default: false
               responses:
-                "200":
+                '200':
                   description: Component-level health detail.
                   content:
                     application/json:
                       schema:
-                        $ref: "#/components/schemas/HealthComponentCollection"
-
+                        $ref: '#/components/schemas/HealthComponentCollection'
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthComponentLambda.Arn}/invocations
                 httpMethod: ANY
                 type: aws_proxy
-
           /artifacts:
             post:
               operationId: ArtifactsList
               summary: Get artifacts
               description: Get artifacts matching the query.
               parameters:
-                - name: X-Authorization
-                  in: header
-                  required: true
-                  schema:
-                    $ref: "#/components/schemas/AuthenticationToken"
+              - name: X-Authorization
+                in: header
+                required: true
+                schema:
+                  $ref: '#/components/schemas/AuthenticationToken'
               responses:
-                "200":
+                '200':
                   description: List of artifacts
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListArtifactsLambda.Arn}/invocations
                 httpMethod: ANY
                 type: aws_proxy
-
           /reset:
             delete:
               operationId: RegistryReset
               summary: Reset the registry
               description: Reset registry to default state.
               parameters:
-                - name: X-Authorization
-                  in: header
-                  required: true
-                  schema:
-                    $ref: "#/components/schemas/AuthenticationToken"
+              - name: X-Authorization
+                in: header
+                required: true
+                schema:
+                  $ref: '#/components/schemas/AuthenticationToken'
               responses:
-                "200":
+                '200':
                   description: Registry is reset
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResetRegistryLambda.Arn}/invocations
                 httpMethod: ANY
                 type: aws_proxy
-
           /artifacts/{artifact_type}/{id}:
             get:
               operationId: ArtifactRetrieve
               summary: Retrieve artifact
               description: Get artifact by ID.
               parameters:
-                - name: artifact_type
-                  in: path
-                  required: true
-                - name: id
-                  in: path
-                  required: true
+              - name: artifact_type
+                in: path
+                required: true
+              - name: id
+                in: path
+                required: true
               responses:
-                "200":
+                '200':
                   description: Artifact found
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetArtifactLambda.Arn}/invocations
                 httpMethod: ANY
                 type: aws_proxy
-
             put:
               operationId: ArtifactUpdate
               summary: Update artifact
               description: Update artifact contents.
               parameters:
-                - name: artifact_type
-                  in: path
-                  required: true
-                - name: id
-                  in: path
-                  required: true
+              - name: artifact_type
+                in: path
+                required: true
+              - name: id
+                in: path
+                required: true
               responses:
-                "200":
+                '200':
                   description: Artifact updated
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateArtifactLambda.Arn}/invocations
                 httpMethod: ANY
                 type: aws_proxy
-
             delete:
               operationId: ArtifactDelete
               summary: Delete artifact
               description: Delete artifact by ID.
               parameters:
-                - name: artifact_type
-                  in: path
-                  required: true
-                - name: id
-                  in: path
-                  required: true
+              - name: artifact_type
+                in: path
+                required: true
+              - name: id
+                in: path
+                required: true
               responses:
-                "200":
+                '200':
                   description: Artifact deleted
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteArtifactLambda.Arn}/invocations
                 httpMethod: ANY
                 type: aws_proxy
-
           /artifact/{artifact_type}:
             post:
               operationId: ArtifactCreate
               summary: Register new artifact
               description: Register new artifact by providing a URL.
               parameters:
-                - name: artifact_type
-                  in: path
-                  required: true
-                - name: X-Authorization
-                  in: header
-                  required: true
+              - name: artifact_type
+                in: path
+                required: true
+              - name: X-Authorization
+                in: header
+                required: true
               responses:
-                "201":
+                '201':
                   description: Artifact created
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateArtifactLambda.Arn}/invocations
                 httpMethod: ANY
                 type: aws_proxy
-
       Cors:
-        AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: "'*'"
-
-  #########################################################
-  # LAMBDA FUNCTIONS
-  #########################################################
-
+        AllowMethods: '''OPTIONS,GET,POST,PUT,DELETE'''
+        AllowHeaders: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+        AllowOrigin: '''*'''
   HealthLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: health_lambda
       Handler: handlers/health_lambda.lambda_handler
-      CodeUri: ./backend/app
+      CodeUri: HealthLambda
       Runtime: python3.11
       Description: Health check endpoint
       Events:
@@ -922,16 +890,18 @@ Resources:
           Properties:
             Path: /health
             Method: get
-            RestApiId: !Ref ece461Ph2Api
+            RestApiId:
+              Ref: ece461Ph2Api
     Policies:
-      - AWSLambdaBasicExecutionRole
-
+    - AWSLambdaBasicExecutionRole
+    Metadata:
+      SamResourceId: HealthLambda
   HealthComponentLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: health_components_lambda
       Handler: handlers/health_components_lambda.lambda_handler
-      CodeUri: ./backend/app
+      CodeUri: HealthComponentLambda
       Runtime: python3.11
       Description: Return per-component health diagnostics
       Events:
@@ -940,16 +910,18 @@ Resources:
           Properties:
             Path: /health/components
             Method: get
-            RestApiId: !Ref ece461Ph2Api
+            RestApiId:
+              Ref: ece461Ph2Api
     Policies:
-      - AWSLambdaBasicExecutionRole
-
+    - AWSLambdaBasicExecutionRole
+    Metadata:
+      SamResourceId: HealthComponentLambda
   CreateArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: create_artifact_lambda
       Handler: handlers/create_artifact_lambda.lambda_handler
-      CodeUri: ./backend/app
+      CodeUri: CreateArtifactLambda
       Description: Lambda for creating artifacts
       Environment:
         Variables:
@@ -960,23 +932,27 @@ Resources:
           Properties:
             Path: /artifact/{artifact_type}
             Method: post
-            RestApiId: !Ref ece461Ph2Api
+            RestApiId:
+              Ref: ece461Ph2Api
       Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            - Effect: Allow
-              Action: secretsmanager:GetSecretValue
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
-            - Effect: Allow
-              Action:
-                - sqs:SendMessage
-              Resource: arn:aws:sqs:us-east-1:422216016693:model-ingestion-queue
+      - AWSLambdaBasicExecutionRole
+      - Statement:
+        - Effect: Allow
+          Action: secretsmanager:GetSecretValue
+          Resource:
+            Fn::Sub: arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
+        - Effect: Allow
+          Action:
+          - sqs:SendMessage
+          Resource: arn:aws:sqs:us-east-1:422216016693:model-ingestion-queue
+    Metadata:
+      SamResourceId: CreateArtifactLambda
   ListArtifactsLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: list_artifacts_lambda
       Handler: handlers/list_artifacts_lambda.lambda_handler
-      CodeUri: ./backend/app
+      CodeUri: ListArtifactsLambda
       Description: Lambda for listing artifacts
       Events:
         ApiEvent:
@@ -984,20 +960,23 @@ Resources:
           Properties:
             Path: /artifacts
             Method: post
-            RestApiId: !Ref ece461Ph2Api
+            RestApiId:
+              Ref: ece461Ph2Api
       Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            - Effect: Allow
-              Action: secretsmanager:GetSecretValue
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
-
+      - AWSLambdaBasicExecutionRole
+      - Statement:
+        - Effect: Allow
+          Action: secretsmanager:GetSecretValue
+          Resource:
+            Fn::Sub: arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
+    Metadata:
+      SamResourceId: ListArtifactsLambda
   GetArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: get_artifact_lambda
       Handler: handlers/get_artifact_lambda.lambda_handler
-      CodeUri: ./backend/app
+      CodeUri: GetArtifactLambda
       Description: Lambda for getting an artifact
       Events:
         ApiEvent:
@@ -1005,20 +984,23 @@ Resources:
           Properties:
             Path: /artifacts/{artifact_type}/{id}
             Method: get
-            RestApiId: !Ref ece461Ph2Api
+            RestApiId:
+              Ref: ece461Ph2Api
       Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            - Effect: Allow
-              Action: secretsmanager:GetSecretValue
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
-
+      - AWSLambdaBasicExecutionRole
+      - Statement:
+        - Effect: Allow
+          Action: secretsmanager:GetSecretValue
+          Resource:
+            Fn::Sub: arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
+    Metadata:
+      SamResourceId: GetArtifactLambda
   UpdateArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: update_artifact_lambda
       Handler: handlers/update_artifact_lambda.lambda_handler
-      CodeUri: ./backend/app
+      CodeUri: UpdateArtifactLambda
       Description: Lambda for updating artifact
       Events:
         ApiEvent:
@@ -1026,20 +1008,23 @@ Resources:
           Properties:
             Path: /artifacts/{artifact_type}/{id}
             Method: put
-            RestApiId: !Ref ece461Ph2Api
+            RestApiId:
+              Ref: ece461Ph2Api
       Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            - Effect: Allow
-              Action: secretsmanager:GetSecretValue
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
-
+      - AWSLambdaBasicExecutionRole
+      - Statement:
+        - Effect: Allow
+          Action: secretsmanager:GetSecretValue
+          Resource:
+            Fn::Sub: arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
+    Metadata:
+      SamResourceId: UpdateArtifactLambda
   DeleteArtifactLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: delete_artifact_lambda
       Handler: handlers/delete_artifact_lambda.lambda_handler
-      CodeUri: ./backend/app
+      CodeUri: DeleteArtifactLambda
       Description: Lambda for deleting artifact
       Events:
         ApiEvent:
@@ -1047,20 +1032,23 @@ Resources:
           Properties:
             Path: /artifacts/{artifact_type}/{id}
             Method: delete
-            RestApiId: !Ref ece461Ph2Api
+            RestApiId:
+              Ref: ece461Ph2Api
       Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            - Effect: Allow
-              Action: secretsmanager:GetSecretValue
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
-
+      - AWSLambdaBasicExecutionRole
+      - Statement:
+        - Effect: Allow
+          Action: secretsmanager:GetSecretValue
+          Resource:
+            Fn::Sub: arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
+    Metadata:
+      SamResourceId: DeleteArtifactLambda
   ResetRegistryLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: reset_registry_lambda
       Handler: handlers/reset_registry_lambda.lambda_handler
-      CodeUri: ./backend/app
+      CodeUri: ResetRegistryLambda
       Description: Lambda for resetting registry
       Events:
         ApiEvent:
@@ -1068,76 +1056,96 @@ Resources:
           Properties:
             Path: /reset
             Method: delete
-            RestApiId: !Ref ece461Ph2Api
+            RestApiId:
+              Ref: ece461Ph2Api
       Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            - Effect: Allow
-              Action: secretsmanager:GetSecretValue
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
-  
-  
-  #########################################################
-  # LAMBDA INVOKE PERMISSIONS (for API Gateway)
-  #########################################################
+      - AWSLambdaBasicExecutionRole
+      - Statement:
+        - Effect: Allow
+          Action: secretsmanager:GetSecretValue
+          Resource:
+            Fn::Sub: arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DB_CREDS-*
+    Metadata:
+      SamResourceId: ResetRegistryLambda
   HealthPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt HealthLambda.Arn 
+      FunctionName:
+        Fn::GetAtt:
+        - HealthLambda
+        - Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
   CreateArtifactPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt CreateArtifactLambda.Arn
+      FunctionName:
+        Fn::GetAtt:
+        - CreateArtifactLambda
+        - Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
   ListArtifactsPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt ListArtifactsLambda.Arn
+      FunctionName:
+        Fn::GetAtt:
+        - ListArtifactsLambda
+        - Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
   GetArtifactPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt GetArtifactLambda.Arn
+      FunctionName:
+        Fn::GetAtt:
+        - GetArtifactLambda
+        - Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
   UpdateArtifactPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt UpdateArtifactLambda.Arn
+      FunctionName:
+        Fn::GetAtt:
+        - UpdateArtifactLambda
+        - Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
   DeleteArtifactPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt DeleteArtifactLambda.Arn
+      FunctionName:
+        Fn::GetAtt:
+        - DeleteArtifactLambda
+        - Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
   ResetRegistryPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt ResetRegistryLambda.Arn
+      FunctionName:
+        Fn::GetAtt:
+        - ResetRegistryLambda
+        - Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
-
-
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ece461Ph2Api}/*/*/*
 Outputs:
   ApiEndpoint:
-    Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${ece461Ph2Api}.execute-api.${AWS::Region}.amazonaws.com/dev"
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${ece461Ph2Api}.execute-api.${AWS::Region}.amazonaws.com/dev
