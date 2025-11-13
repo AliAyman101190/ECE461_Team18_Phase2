@@ -47,7 +47,7 @@ jobs:
 
     - name: Build SAM application
       run: |
-        sam build
+        sam build --use-container
 
     - name: Deploy to AWS
       env:
