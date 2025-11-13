@@ -260,7 +260,8 @@ Resources:
   #########################################################
   # LAMBDA FUNCTIONS
   #########################################################
-  HealthFunction:
+
+  HealthLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: health_lambda
