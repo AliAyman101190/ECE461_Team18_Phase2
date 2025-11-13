@@ -1,14 +1,10 @@
-#need to make this work
-
 import json
 import os
 import boto3
 import psycopg2
-import urllib.request
 from urllib.parse import urlparse
-from auth import require_auth
 
-# Import rating logic
+from auth import require_auth
 from metric_calculator import MetricCalculator
 from url_handler import URLHandler
 from url_category import URLCategory
@@ -19,142 +15,175 @@ S3_BUCKET = os.environ.get("S3_BUCKET")
 SECRET_NAME = os.environ.get("SECRET_NAME", "DB_CREDS")
 
 secrets_client = boto3.client("secretsmanager")
-s3_client = boto3.client("s3")
+sqs_client = boto3.client("sqs")
 
 
+# -----------------------------
+# DB Connection Helper
+# -----------------------------
 def get_db_connection():
-    """Retrieve DB credentials from Secrets Manager and connect to Postgres."""
     secret_response = secrets_client.get_secret_value(SecretId=SECRET_NAME)
-    secret = json.loads(secret_response["SecretString"])
+    creds = json.loads(secret_response["SecretString"])
+
     return psycopg2.connect(
-        host=secret["host"],
-        port=secret["port"],
-        dbname=secret["dbname"],
-        user=secret["username"],
-        password=secret["password"],
+        host=creds["host"],
+        port=creds["port"],
+        dbname=creds["dbname"],
+        user=creds["username"],
+        password=creds["password"],
     )
 
 
-def parse_huggingface_url(url: str):
-    """Extract model identifier from Hugging Face URL."""
+# -----------------------------
+# Helper: Extract HF Identifier
+# -----------------------------
+def parse_huggingface_identifier(url: str):
     parsed = urlparse(url)
     parts = [p for p in parsed.path.split("/") if p]
     if len(parts) >= 2:
-        return f"{parts[0]}/{parts[1]}"
+        return f"{parts[0]}/{parts[1]}"   # e.g. "google-bert/bert-base-uncased"
     return None
 
 
-def list_huggingface_files(identifier: str):
-    """Return list of file paths for a Hugging Face model."""
-    api_url = f"https://huggingface.co/api/models/{identifier}"
-    with urllib.request.urlopen(api_url) as response:
-        data = json.load(response)
-        siblings = data.get("siblings", [])
-        return [file["rfilename"] for file in siblings]
-
-
-def download_and_upload_to_s3(identifier: str, artifact_type: str, artifact_id: int):
-    """Stream all model files from HF → directly to S3."""
-    files = list_huggingface_files(identifier)
-    for filename in files:
-        hf_file_url = f"https://huggingface.co/{identifier}/resolve/main/{filename}"
-        s3_key = f"{artifact_type}/{artifact_id}/{filename}"
-        try:
-            with urllib.request.urlopen(hf_file_url) as response:
-                s3_client.upload_fileobj(response, S3_BUCKET, s3_key)
-        except Exception as e:
-            print(f"Failed to upload {filename}: {e}")
-
-
-
-
+# -----------------------------
+# Lambda Handler
+# -----------------------------
 def lambda_handler(event, context):
-
-    # 403 AUTHENTICATION FAILED
+    # --------------------------
+    # 1. Authentication
+    # --------------------------
     valid, error = require_auth(event)
     if not valid:
-        return error
-    
+        return error   # already structured 403
+
     try:
         body = json.loads(event.get("body", "{}"))
         url = body.get("url")
         artifact_type = event.get("pathParameters", {}).get("artifact_type")
 
+        # --------------------------
+        # 2. Validate request
+        # --------------------------
         if not url or not artifact_type:
             return {
                 "statusCode": 400,
                 "body": json.dumps({"error": "Missing URL or artifact_type"})
             }
 
-        identifier = parse_huggingface_url(url)
+        identifier = parse_huggingface_identifier(url)
         if not identifier:
             return {
                 "statusCode": 400,
                 "body": json.dumps({"error": "Invalid Hugging Face URL"})
             }
-        
-        # DUPLICATE CHECK (409)
+
+        # --------------------------
+        # 3. Duplicate check
+        # --------------------------
         conn = get_db_connection()
         cur = conn.cursor()
+
         cur.execute(
             "SELECT id FROM artifacts WHERE url = %s AND type = %s;",
             (url, artifact_type)
         )
-        existing = cur.fetchone()
-        if existing:
+        row = cur.fetchone()
+
+        if row:
             cur.close()
             conn.close()
             return {
                 "statusCode": 409,
-                "body": json.dumps({"error": "Artifact already exists", "id": existing[0]})
+                "body": json.dumps({
+                    "error": "Artifact already exists",
+                    "id": row[0]
+                })
             }
-        
-        # RATING PIPELINE (424 / 202 / 201)
+
+        # --------------------------
+        # 4. RATING PIPELINE
+        # --------------------------
         url_handler = URLHandler()
         data_retriever = DataRetriever(
             github_token=os.environ.get("GITHUB_TOKEN"),
             hf_token=os.environ.get("HF_TOKEN")
         )
-        metric_calc = MetricCalculator()
+        calc = MetricCalculator()
 
-        # Build synthetic model data (minimal needed for calculator)
         model_obj = URLData(url=url, category=URLCategory.HUGGINGFACE, is_valid=True)
 
+        # get metadata from HF repo (README, config, tags, etc)
         repo_data = data_retriever.retrieve_data(model_obj)
+
         model_dict = {
             **repo_data.__dict__,
             "name": identifier
         }
 
-        rating = metric_calc.calculate_all_metrics(model_dict, category="MODEL")
+        rating = calc.calculate_all_metrics(model_dict, category="MODEL")
         net_score = rating["net_score"]
 
-        # Disqualified
+        # --------------------------
+        # 5. Reject if disqualified
+        # --------------------------
         if net_score < 0.5:
+            # insert into DB as disqualified (spec requires this)
+            cur.execute(
+                """
+                INSERT INTO artifacts (type, url, name, net_score, ratings, status)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id;
+                """,
+                (artifact_type, url, identifier, net_score, json.dumps(rating), "disqualified")
+            )
+            artifact_id = cur.fetchone()[0]
+            conn.commit()
+
+            cur.close()
+            conn.close()
+
             return {
-                "statusCode": 424,
+                "statusCode": 424,  # FAILED_DEPENDENCY
                 "body": json.dumps({
-                    "error": "Artifact is not registered due to disqualified rating.",
-                    "net_score": net_score
+                    "error": "Artifact disqualified by rating",
+                    "net_score": net_score,
+                    "id": artifact_id
                 })
             }
 
-
-
-        # --- Insert DB record ---
+        # --------------------------
+        # 6. Insert as upload_pending
+        # --------------------------
         cur.execute(
-            "INSERT INTO artifacts (type, url, name) VALUES (%s, %s, %s) RETURNING id;",
-            (artifact_type, url, identifier, net_score),   #### added net_score
+            """
+            INSERT INTO artifacts (type, url, name, net_score, ratings, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id;
+            """,
+            (artifact_type, url, identifier, net_score, json.dumps(rating), "upload_pending")
         )
+
         artifact_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
 
-        # --- Download all files to S3 ---
-        download_and_upload_to_s3(identifier, artifact_type, artifact_id)
+        # --------------------------
+        # 7. Send SQS message to ECS ingest worker
+        # --------------------------
+        sqs_client.send_message(
+            QueueUrl=os.environ.get("INGEST_QUEUE_URL"),
+            MessageBody=json.dumps({
+                "artifact_id": artifact_id,
+                "artifact_type": artifact_type,
+                "identifier": identifier,
+                "source_url": url
+            })
+        )
 
-        # SUCCESS RESPONSE (201)
+        # --------------------------
+        # 8. SUCCESS (201)
+        # --------------------------
         return {
             "statusCode": 201,
             "body": json.dumps({
@@ -164,8 +193,7 @@ def lambda_handler(event, context):
                     "type": artifact_type
                 },
                 "data": {
-                    "url": url,
-                    "download_url": f"s3://{S3_BUCKET}/{artifact_type}/{artifact_id}/"
+                    "url": url
                 }
             })
         }
