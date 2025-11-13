@@ -52,9 +52,9 @@ def lambda_handler(event, context):
     # --------------------------
     # 1. Authentication
     # --------------------------
-    valid, error = require_auth(event)
-    if not valid:
-        return error   # already structured 403
+    # valid, error = require_auth(event)
+    # if not valid:
+    #     return error   # already structured 403   ########### THIS WILL BE REPLACE WITH DB INTEGRATION FOR TOKEN
 
     try:
         body = json.loads(event.get("body", "{}"))
