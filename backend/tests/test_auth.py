@@ -1,7 +1,7 @@
 import pytest
 
 # Adjust this import path if needed depending on your structure
-from auth import validate_token, require_auth
+from app.auth import validate_token, require_auth
 
 
 # -------- validate_token() TESTS -------- #

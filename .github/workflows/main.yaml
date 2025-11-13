@@ -9,7 +9,7 @@ jobs:
     env:
       GEN_AI_STUDIO_API_KEY: ${{ secrets.GEN_AI_STUDIO_API_KEY }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub fills this automatically
+      TEAM18_GITHUB_TOKEN: ${{ secrets.TEAM18_GITHUB_TOKEN }} # GitHub fills this automatically
     steps:
     - uses: actions/checkout@v4
 
@@ -26,6 +26,9 @@ jobs:
     - name: Run MyPy
       run: mypy backend/app/
 
+    - name: Set Python path
+      run: echo "PYTHONPATH=$GITHUB_WORKSPACE/backend" >> $GITHUB_ENV
+      
     - name: Run tests
       run: |
         python -m pytest --cov=app --cov-report=term-missing backend/tests/
