@@ -26,11 +26,11 @@ def get_db_connection():
     creds = json.loads(secret_response["SecretString"])
 
     return psycopg2.connect(
-        host=creds["host"],
-        port=creds["port"],
-        dbname=creds["dbname"],
-        user=creds["username"],
-        password=creds["password"],
+        host=creds["DB_HOST"],
+        port=creds["DB_PORT"],
+        dbname=creds["DB_NAME"],
+        user=creds["DB_USER"],
+        password=creds["DB_PASS"],
     )
 
 
