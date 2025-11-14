@@ -22,8 +22,8 @@ def lambda_handler(event, context):
     secret = body.get("secret", {})
 
     username = user.get("name")
-    is_admin = True
-    # is_admin = user.get("is_admin")
+    # is_admin = True
+    is_admin = user.get("is_admin")
     password = secret.get("password")
 
     # Validate request structure
@@ -57,7 +57,7 @@ def lambda_handler(event, context):
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
     # MUST return as plain string inside JSON
-    return response(200, f"bearer {token}")
+    return response(200, f"\"bearer {token}\"")
     
 
 
