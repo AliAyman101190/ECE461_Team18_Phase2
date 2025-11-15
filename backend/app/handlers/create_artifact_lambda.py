@@ -1,8 +1,6 @@
 import json
 import os
 import boto3
-import psycopg2
-from urllib.parse import urlparse
 
 from auth import require_auth
 from metric_calculator import MetricCalculator
@@ -10,40 +8,11 @@ from url_handler import URLHandler
 from url_category import URLCategory
 from url_data import URLData
 from data_retrieval import DataRetriever
+from rds_connection import get_connection, run_query
 
 
 S3_BUCKET = os.environ.get("S3_BUCKET")
-SECRET_NAME = os.environ.get("SECRET_NAME", "DB_CREDS")
-
-secrets_client = boto3.client("secretsmanager")
 sqs_client = boto3.client("sqs")
-
-
-# -----------------------------
-# DB Connection Helper
-# -----------------------------
-def get_db_connection():
-    secret_response = secrets_client.get_secret_value(SecretId=SECRET_NAME)
-    creds = json.loads(secret_response["SecretString"])
-
-    return psycopg2.connect(
-        host=creds["DB_HOST"],
-        port=creds["DB_PORT"],
-        dbname=creds["DB_NAME"],
-        user=creds["DB_USER"],
-        password=creds["DB_PASS"],
-    )
-
-
-# -----------------------------
-# Helper: Extract HF Identifier
-# -----------------------------
-def parse_huggingface_identifier(url: str):
-    parsed = urlparse(url)
-    parts = [p for p in parsed.path.split("/") if p]
-    if len(parts) >= 2:
-        return f"{parts[0]}/{parts[1]}"   # e.g. "google-bert/bert-base-uncased"
-    return None
 
 
 # -----------------------------
@@ -64,8 +33,12 @@ def lambda_handler(event, context):
                 "body": json.dumps({"error": "Missing URL or artifact_type"})
             }
 
-        identifier = parse_huggingface_identifier(url)
-        if not identifier:
+        # Use URLHandler to extract identifier
+        url_handler_temp = URLHandler()
+        parsed_data = url_handler_temp.handle_url(url)
+        identifier = parsed_data.unique_identifier
+        
+        if not identifier or parsed_data.category != URLCategory.HUGGINGFACE:
             return {
                 "statusCode": 400,
                 "body": json.dumps({"error": "Invalid Hugging Face URL"})
@@ -74,23 +47,18 @@ def lambda_handler(event, context):
         # --------------------------
         # 3. Duplicate check (using source_url)
         # --------------------------
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        cur.execute(
+        check_result = run_query(
             "SELECT id FROM artifacts WHERE source_url = %s AND type = %s;",
-            (url, artifact_type)
+            (url, artifact_type),
+            fetch=True
         )
-        row = cur.fetchone()
 
-        if row:
-            cur.close()
-            conn.close()
+        if check_result:
             return {
                 "statusCode": 409,
                 "body": json.dumps({
                     "error": "Artifact already exists",
-                    "id": row[0]
+                    "id": check_result[0]['id']
                 })
             }
 
@@ -104,8 +72,16 @@ def lambda_handler(event, context):
         )
         calc = MetricCalculator()
 
-        model_obj = URLData(url=url, category=URLCategory.HUGGINGFACE, is_valid=True)
+        # Let URLHandler build a proper URLData instance
+        model_obj: URLData = url_handler.handle_url(url)
 
+        if not model_obj.is_valid or model_obj.category != URLCategory.HUGGINGFACE:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "URL is not a valid Hugging Face URL"})
+            }
+
+        # get metadata from HF repo (README, config, tags, etc)
         repo_data = data_retriever.retrieve_data(model_obj)
 
         model_dict = {
@@ -126,20 +102,17 @@ def lambda_handler(event, context):
                 "status": "disqualified"
             })
 
-            cur.execute(
+            result = run_query(
                 """
                 INSERT INTO artifacts (type, source_url, name, metadata)
                 VALUES (%s, %s, %s, %s)
                 RETURNING id;
                 """,
-                (artifact_type, url, identifier, metadata_json)
+                (artifact_type, url, identifier, metadata_json),
+                fetch=True
             )
 
-            artifact_id = cur.fetchone()[0]
-            conn.commit()
-
-            cur.close()
-            conn.close()
+            artifact_id = result[0]['id']
 
             return {
                 "statusCode": 424,  # FAILED_DEPENDENCY
@@ -159,19 +132,17 @@ def lambda_handler(event, context):
             "status": "upload_pending"
         })
 
-        cur.execute(
+        result = run_query(
             """
             INSERT INTO artifacts (type, source_url, name, metadata)
             VALUES (%s, %s, %s, %s)
             RETURNING id;
             """,
-            (artifact_type, url, identifier, metadata_json)
+            (artifact_type, url, identifier, metadata_json),
+            fetch=True
         )
 
-        artifact_id = cur.fetchone()[0]
-        conn.commit()
-        cur.close()
-        conn.close()
+        artifact_id = result[0]['id']
 
         # --------------------------
         # 7. Send SQS message to ECS ingest worker
