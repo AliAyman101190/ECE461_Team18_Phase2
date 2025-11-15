@@ -11,7 +11,7 @@ def lambda_handler(event, context):
         # --- Optional: in the future you can parse filters from the event["body"] or query params ---
         # For now, just fetch everything
         sql = """
-        SELECT id, type, url, created_at
+        SELECT id, type, url, name, net_score, ratings, status, created_at
         FROM artifacts
         ORDER BY created_at DESC;
         """

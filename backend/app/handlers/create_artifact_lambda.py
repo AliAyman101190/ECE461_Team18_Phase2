@@ -44,10 +44,10 @@ def lambda_handler(event, context):
             }
 
         # --------------------------
-        # 3. Duplicate check (using source_url)
+        # 3. Duplicate check (using url)
         # --------------------------
         check_result = run_query(
-            "SELECT id FROM artifacts WHERE source_url = %s AND type = %s;",
+            "SELECT id FROM artifacts WHERE url = %s AND type = %s;",
             (url, artifact_type),
             fetch=True
         )
@@ -95,19 +95,13 @@ def lambda_handler(event, context):
         # 5. Reject if disqualified
         # --------------------------
         if net_score < 0.5:
-            metadata_json = json.dumps({
-                "net_score": net_score,
-                "ratings": rating,
-                "status": "disqualified"
-            })
-
             result = run_query(
                 """
-                INSERT INTO artifacts (type, source_url, name, metadata)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO artifacts (type, url, name, net_score, ratings, status)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id;
                 """,
-                (artifact_type, url, identifier, metadata_json),
+                (artifact_type, url, identifier, net_score, json.dumps(rating), "disqualified"),
                 fetch=True
             )
 
@@ -125,19 +119,13 @@ def lambda_handler(event, context):
         # --------------------------
         # 6. Insert as upload_pending
         # --------------------------
-        metadata_json = json.dumps({
-            "net_score": net_score,
-            "ratings": rating,
-            "status": "upload_pending"
-        })
-
         result = run_query(
             """
-            INSERT INTO artifacts (type, source_url, name, metadata)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO artifacts (type, url, name, net_score, ratings, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
-            (artifact_type, url, identifier, metadata_json),
+            (artifact_type, url, identifier, net_score, json.dumps(rating), "upload_pending"),
             fetch=True
         )
 
@@ -152,7 +140,7 @@ def lambda_handler(event, context):
                 "artifact_id": artifact_id,
                 "artifact_type": artifact_type,
                 "identifier": identifier,
-                "source_url": url
+                "url": url
             })
         )
 

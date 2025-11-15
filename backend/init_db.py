@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS artifacts (
     id SERIAL PRIMARY KEY,
     type TEXT NOT NULL,
     url TEXT NOT NULL,
+    name TEXT,
+    net_score FLOAT,
+    ratings JSONB,
+    status TEXT DEFAULT 'upload_pending',
     created_at TIMESTAMP DEFAULT NOW()
 );
 """)

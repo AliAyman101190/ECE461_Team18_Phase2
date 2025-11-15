@@ -44,7 +44,7 @@ def lambda_handler(event, context):
         UPDATE artifacts
         SET url = %s
         WHERE id = %s AND type = %s
-        RETURNING id, type, url, created_at;
+        RETURNING id, type, url, name, net_score, ratings, status, created_at;
         """
         result = run_query(sql, (new_url, artifact_id, artifact_type), fetch=True)
 

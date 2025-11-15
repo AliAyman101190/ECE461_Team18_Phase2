@@ -22,7 +22,7 @@ def lambda_handler(event, context):
     # --- Fetch from database ---
     try:
         sql = """
-        SELECT id, type, url, created_at
+        SELECT id, type, url, name, net_score, ratings, status, created_at
         FROM artifacts
         WHERE id = %s AND type = %s;
         """
