@@ -1,5 +1,5 @@
 import json
-from handlers.rds_connection import run_query
+from rds_connection import run_query
 
 
 def lambda_handler(event, context):
