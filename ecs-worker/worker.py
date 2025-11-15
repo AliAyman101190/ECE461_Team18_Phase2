@@ -11,6 +11,7 @@ secrets = boto3.client("secretsmanager")
 QUEUE_URL = os.environ["QUEUE_URL"]
 S3_BUCKET = os.environ["S3_BUCKET"]
 SECRET_NAME = os.environ["SECRET_NAME"]
+HF_TOKEN = os.environ.get("HF_TOKEN")  # Optional but recommended to avoid rate limits
 
 def parse_hf_identifier(url: str):
     parsed = urlparse(url)
@@ -21,13 +22,21 @@ def parse_hf_identifier(url: str):
 
 def list_hf_files(identifier: str):
     api_url = f"https://huggingface.co/api/models/{identifier}"
-    with urllib.request.urlopen(api_url) as response:
+    request = urllib.request.Request(api_url)
+    request.add_header("User-Agent", "ECE461-Model-Ingest-Worker")
+    if HF_TOKEN:
+        request.add_header("Authorization", f"Bearer {HF_TOKEN}")
+    with urllib.request.urlopen(request) as response:
         data = json.load(response)
         siblings = data.get("siblings", [])
         return [file["rfilename"] for file in siblings]
 
 def stream_file_to_s3(url, bucket, key):
-    with urllib.request.urlopen(url) as response:
+    request = urllib.request.Request(url)
+    request.add_header("User-Agent", "ECE461-Model-Ingest-Worker")
+    if HF_TOKEN:
+        request.add_header("Authorization", f"Bearer {HF_TOKEN}")
+    with urllib.request.urlopen(request) as response:
         s3.upload_fileobj(response, bucket, key)
 
 print("Worker started. Waiting for messages...")
