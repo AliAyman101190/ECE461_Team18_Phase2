@@ -8,7 +8,7 @@ from url_handler import URLHandler
 from url_category import URLCategory
 from url_data import URLData
 from data_retrieval import DataRetriever
-from backend.app.rds_connection import run_query
+from handlers.rds_connection import run_query
 
 
 S3_BUCKET = os.environ.get("S3_BUCKET")
