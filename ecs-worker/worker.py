@@ -48,7 +48,7 @@ while True:
 
     artifact_id = body["artifact_id"]
     artifact_type = body["artifact_type"]
-    url = body["url"]
+    url = body["source_url"]
 
     try:
         identifier = parse_hf_identifier(url)
