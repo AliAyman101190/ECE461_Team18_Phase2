@@ -91,30 +91,30 @@ def lambda_handler(event, context):
         rating = calc.calculate_all_metrics(model_dict, category="MODEL")
         net_score = rating["net_score"]
 
-        # --------------------------
-        # 5. Reject if disqualified
-        # --------------------------
-        if net_score < 0.5:
-            result = run_query(
-                """
-                INSERT INTO artifacts (type, name, source_url, net_score, ratings, status)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING id;
-                """,
-                (artifact_type, identifier, url, net_score, json.dumps(rating), "disqualified"),
-                fetch=True
-            )
+        # # --------------------------
+        # # 5. Reject if disqualified
+        # # --------------------------
+        # if net_score < 0.5:
+        #     result = run_query(
+        #         """
+        #         INSERT INTO artifacts (type, name, source_url, net_score, ratings, status)
+        #         VALUES (%s, %s, %s, %s, %s, %s)
+        #         RETURNING id;
+        #         """,
+        #         (artifact_type, identifier, url, net_score, json.dumps(rating), "disqualified"),
+        #         fetch=True
+        #     )
 
-            artifact_id = result[0]['id']
+        #     artifact_id = result[0]['id']
 
-            return {
-                "statusCode": 424,  # FAILED_DEPENDENCY
-                "body": json.dumps({
-                    "error": "Artifact disqualified by rating",
-                    "net_score": net_score,
-                    "id": artifact_id
-                })
-            }
+        #     return {
+        #         "statusCode": 424,  # FAILED_DEPENDENCY
+        #         "body": json.dumps({
+        #             "error": "Artifact disqualified by rating",
+        #             "net_score": net_score,
+        #             "id": artifact_id
+        #         })
+        #     }
 
         # --------------------------
         # 6. Insert as upload_pending
