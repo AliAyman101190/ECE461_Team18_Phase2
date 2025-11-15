@@ -1,5 +1,5 @@
 import json
-from rds_connection import run_query
+from backend.app.rds_connection import run_query
 
 def lambda_handler(event, context):
     """Delete an artifact by its ID and type from the database."""
