@@ -113,7 +113,7 @@ def process_ingest_message(msg_body: str):
       "artifact_id": int,
       "artifact_type": "model" | "dataset" | "code",
       "identifier": "owner/name",
-      "url": "https://huggingface.co/owner/name"
+      "source_url": "https://huggingface.co/owner/name"
     }
     """
     data = json.loads(msg_body)

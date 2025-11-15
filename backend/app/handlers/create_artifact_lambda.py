@@ -44,10 +44,10 @@ def lambda_handler(event, context):
             }
 
         # --------------------------
-        # 3. Duplicate check (using url)
+        # 3. Duplicate check (using source_url)
         # --------------------------
         check_result = run_query(
-            "SELECT id FROM artifacts WHERE url = %s AND type = %s;",
+            "SELECT id FROM artifacts WHERE source_url = %s AND type = %s;",
             (url, artifact_type),
             fetch=True
         )
@@ -97,11 +97,11 @@ def lambda_handler(event, context):
         if net_score < 0.5:
             result = run_query(
                 """
-                INSERT INTO artifacts (type, url, name, net_score, ratings, status)
+                INSERT INTO artifacts (type, name, source_url, net_score, ratings, status)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id;
                 """,
-                (artifact_type, url, identifier, net_score, json.dumps(rating), "disqualified"),
+                (artifact_type, identifier, url, net_score, json.dumps(rating), "disqualified"),
                 fetch=True
             )
 
@@ -121,11 +121,11 @@ def lambda_handler(event, context):
         # --------------------------
         result = run_query(
             """
-            INSERT INTO artifacts (type, url, name, net_score, ratings, status)
+            INSERT INTO artifacts (type, name, source_url, net_score, ratings, status)
             VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
-            (artifact_type, url, identifier, net_score, json.dumps(rating), "upload_pending"),
+            (artifact_type, identifier, url, net_score, json.dumps(rating), "upload_pending"),
             fetch=True
         )
 
@@ -140,7 +140,7 @@ def lambda_handler(event, context):
                 "artifact_id": artifact_id,
                 "artifact_type": artifact_type,
                 "identifier": identifier,
-                "url": url
+                "source_url": url
             })
         )
 

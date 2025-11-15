@@ -22,13 +22,13 @@ def lambda_handler(event, context):
     # --- Parse body (new data) ---
     try:
         body = json.loads(event.get("body", "{}"))
-        new_url = body.get("url")
+        new_url = body.get("source_url")
 
         if not new_url:
             return {
                 "statusCode": 400,
                 "headers": {"Content-Type": "application/json"},
-                "body": json.dumps({"error": "Missing 'url' in request body"})
+                "body": json.dumps({"error": "Missing 'source_url' in request body"})
             }
 
     except json.JSONDecodeError:
@@ -42,9 +42,9 @@ def lambda_handler(event, context):
     try:
         sql = """
         UPDATE artifacts
-        SET url = %s
+        SET source_url = %s
         WHERE id = %s AND type = %s
-        RETURNING id, type, url, name, net_score, ratings, status, created_at;
+        RETURNING id, type, name, source_url, download_url, net_score, ratings, status, metadata, created_at;
         """
         result = run_query(sql, (new_url, artifact_id, artifact_type), fetch=True)
 
