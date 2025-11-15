@@ -11,6 +11,7 @@ from url_category import URLCategory
 from url_data import URLData
 from data_retrieval import DataRetriever
 
+
 S3_BUCKET = os.environ.get("S3_BUCKET")
 SECRET_NAME = os.environ.get("SECRET_NAME", "DB_CREDS")
 
@@ -49,13 +50,6 @@ def parse_huggingface_identifier(url: str):
 # Lambda Handler
 # -----------------------------
 def lambda_handler(event, context):
-    # --------------------------
-    # 1. Authentication
-    # --------------------------
-    # valid, error = require_auth(event)
-    # if not valid:
-    #     return error   # already structured 403   ########### THIS WILL BE REPLACE WITH DB INTEGRATION FOR TOKEN
-
     try:
         body = json.loads(event.get("body", "{}"))
         url = body.get("url")
@@ -78,13 +72,13 @@ def lambda_handler(event, context):
             }
 
         # --------------------------
-        # 3. Duplicate check
+        # 3. Duplicate check (using source_url)
         # --------------------------
         conn = get_db_connection()
         cur = conn.cursor()
 
         cur.execute(
-            "SELECT id FROM artifacts WHERE url = %s AND type = %s;",
+            "SELECT id FROM artifacts WHERE source_url = %s AND type = %s;",
             (url, artifact_type)
         )
         row = cur.fetchone()
@@ -112,7 +106,6 @@ def lambda_handler(event, context):
 
         model_obj = URLData(url=url, category=URLCategory.HUGGINGFACE, is_valid=True)
 
-        # get metadata from HF repo (README, config, tags, etc)
         repo_data = data_retriever.retrieve_data(model_obj)
 
         model_dict = {
@@ -127,15 +120,21 @@ def lambda_handler(event, context):
         # 5. Reject if disqualified
         # --------------------------
         if net_score < 0.5:
-            # insert into DB as disqualified (spec requires this)
+            metadata_json = json.dumps({
+                "net_score": net_score,
+                "ratings": rating,
+                "status": "disqualified"
+            })
+
             cur.execute(
                 """
-                INSERT INTO artifacts (type, url, name, net_score, ratings, status)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO artifacts (type, source_url, name, metadata)
+                VALUES (%s, %s, %s, %s)
                 RETURNING id;
                 """,
-                (artifact_type, url, identifier, net_score, json.dumps(rating), "disqualified")
+                (artifact_type, url, identifier, metadata_json)
             )
+
             artifact_id = cur.fetchone()[0]
             conn.commit()
 
@@ -154,13 +153,19 @@ def lambda_handler(event, context):
         # --------------------------
         # 6. Insert as upload_pending
         # --------------------------
+        metadata_json = json.dumps({
+            "net_score": net_score,
+            "ratings": rating,
+            "status": "upload_pending"
+        })
+
         cur.execute(
             """
-            INSERT INTO artifacts (type, url, name, net_score, ratings, status)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO artifacts (type, source_url, name, metadata)
+            VALUES (%s, %s, %s, %s)
             RETURNING id;
             """,
-            (artifact_type, url, identifier, net_score, json.dumps(rating), "upload_pending")
+            (artifact_type, url, identifier, metadata_json)
         )
 
         artifact_id = cur.fetchone()[0]
